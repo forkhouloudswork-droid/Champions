@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
 
 // Helper to calculate points based on our fair point system rules
 function calculatePoints(prediction, actualHomeScore, actualAwayScore) {
@@ -42,7 +47,7 @@ export async function GET(request) {
   try {
     // 1. Fetch live matches from public API (api-football)
     // Note: This uses the direct API-Football dashboard subscription.
-    const res = await fetch('https://v3.football.api-sports.io/fixtures?league=1&season=2026', {
+    const res = await fetch('https://v3.football.api-sports.io/fixtures?league=15&season=2025', {
       headers: {
         'x-apisports-key': process.env.API_SPORTS_KEY || ''
       }
@@ -89,21 +94,23 @@ function getCountryCode(name) {
       const awayTeamName = fixture.teams?.away?.name || 'TBD';
 
       // Update match
-      await supabase.from('matches').upsert({
+      const { error: upsertError } = await supabaseAdmin.from('matches').upsert({
         id: matchId,
         home_team: homeTeamName,
         away_team: awayTeamName,
-        home_team_code: getCountryCode(homeTeamName),
-        away_team_code: getCountryCode(awayTeamName),
+        home_team_code: fixture.teams?.home?.logo || getCountryCode(homeTeamName),
+        away_team_code: fixture.teams?.away?.logo || getCountryCode(awayTeamName),
         start_time: fixture.fixture.date,
         home_score: homeScore,
         away_score: awayScore,
         status: status
       });
+      
+      if (upsertError) console.error('Match Upsert Error:', upsertError);
 
       // If finished, calculate points for all predictions related to this match
       if (status === 'finished' && homeScore !== null && awayScore !== null) {
-        const { data: predictions } = await supabase
+        const { data: predictions } = await supabaseAdmin
           .from('predictions')
           .select('*')
           .eq('match_id', matchId)
@@ -114,20 +121,20 @@ function getCountryCode(name) {
             const earned = calculatePoints(pred, homeScore, awayScore);
             
             // Update prediction points
-            await supabase
+            await supabaseAdmin
               .from('predictions')
               .update({ points_awarded: earned })
               .eq('id', pred.id);
 
             // Fetch user to update total points safely
-            const { data: profile } = await supabase
+            const { data: profile } = await supabaseAdmin
               .from('profiles')
               .select('points')
               .eq('id', pred.user_id)
               .single();
 
             if (profile) {
-              await supabase
+              await supabaseAdmin
                 .from('profiles')
                 .update({ points: Number(profile.points) + earned })
                 .eq('id', pred.user_id);

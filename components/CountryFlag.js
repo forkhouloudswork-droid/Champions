@@ -1,6 +1,11 @@
 import React from 'react';
 
 export default function CountryFlag({ code, name, size = 20 }) {
+  if (!code) return null;
+  if (code.startsWith('http')) {
+    return <img src={code} alt={name} width={size} className="inline-block rounded-sm shadow-sm object-contain" style={{ height: size }} />;
+  }
+
   const codeLower = code.toLowerCase();
   
   return (
