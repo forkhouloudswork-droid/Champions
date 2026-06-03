@@ -55,11 +55,11 @@ export async function GET(request) {
     console.log('SERVICE_ROLE present:', hasServiceRole);
 
     // 1. Fetch live matches from public API (sportapi7 on RapidAPI)
-    // The Club World Cup is uniqueTournament.id = 357. Since there's no "get all tournament events" endpoint,
-    // we fetch every day of the tournament (June 15, 2025 -> July 13, 2025) via Promise.all.
+    // The FIFA World Cup 2026 is uniqueTournament.id = 16.
+    // We fetch every day of the tournament (June 11, 2026 -> July 19, 2026) via Promise.all.
     const dates = [];
-    for(let i=15; i<=30; i++) dates.push(`2025-06-${i}`);
-    for(let i=1; i<=13; i++) dates.push(`2025-07-${i < 10 ? '0'+i : i}`);
+    for(let i=11; i<=30; i++) dates.push(`2026-06-${i}`);
+    for(let i=1; i<=19; i++) dates.push(`2026-07-${i < 10 ? '0'+i : i}`);
 
     const headers = {
       'X-RapidAPI-Key': process.env.API_SPORTS_KEY || '',
@@ -81,18 +81,18 @@ export async function GET(request) {
       const results = await Promise.all(fetchPromises);
       apiResponse = results[0]; // Just save one day for debug purposes
 
-      // Flatten and filter for Club World Cup (id 357)
+      // Flatten and filter for FIFA World Cup 2026 (id 16)
       results.forEach(day => {
         if (day && day.events) {
-          const cwcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 357);
-          fixtures.push(...cwcEvents);
+          const wcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 16);
+          fixtures.push(...wcEvents);
         }
       });
     } catch (err) {
       console.error('SportAPI7 Fetch Error:', err);
     }
 
-    console.log(`Found ${fixtures.length} fixtures from SportAPI7 for Club World Cup.`);
+    console.log(`Found ${fixtures.length} fixtures from SportAPI7 for FIFA World Cup 2026.`);
 
     // 2. Iterate and update matches in DB, and compute points for finished ones
     for (const fixture of fixtures) {
