@@ -56,10 +56,10 @@ export async function GET(request) {
 
     // 1. Fetch live matches from public API (sportapi7 on RapidAPI)
     // The FIFA World Cup 2026 is uniqueTournament.id = 16.
-    // We fetch every day of the tournament (June 11, 2026 -> July 19, 2026) via Promise.all.
+    // We fetch the first 5 days of the tournament (June 11, 2026 -> June 15, 2026) 
+    // to prevent hitting RapidAPI's "429 Too Many Requests" rate limit or Vercel's timeout.
     const dates = [];
-    for(let i=11; i<=30; i++) dates.push(`2026-06-${i}`);
-    for(let i=1; i<=19; i++) dates.push(`2026-07-${i < 10 ? '0'+i : i}`);
+    for(let i=11; i<=15; i++) dates.push(`2026-06-${i}`);
 
     const headers = {
       'X-RapidAPI-Key': process.env.API_SPORTS_KEY || '',
@@ -199,9 +199,9 @@ function getCountryCode(name) {
           hasServiceRole
         },
         apiSports: {
-          status: res.status,
+          status: apiResponse ? 200 : (fixtures.length === 0 ? 429 : 500),
           fixturesFound: fixtures.length,
-          apiErrors: apiResponse?.errors || null
+          apiErrors: apiResponse?.message || null
         },
         supabase: {
           matchesUpserted: upsertCount,
@@ -211,6 +211,6 @@ function getCountryCode(name) {
     });
   } catch (error) {
     console.error('Error syncing matches:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error.toString() }, { status: 500 });
   }
 }
