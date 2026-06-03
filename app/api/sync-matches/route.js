@@ -42,7 +42,7 @@ export async function GET(request) {
   try {
     // 1. Fetch live matches from public API (api-football)
     // Note: This uses the direct API-Football dashboard subscription.
-    const res = await fetch('https://v3.football.api-sports.io/fixtures?league=1&season=2026&live=all', {
+    const res = await fetch('https://v3.football.api-sports.io/fixtures?league=1&season=2026', {
       headers: {
         'x-apisports-key': process.env.API_SPORTS_KEY || ''
       }
@@ -58,7 +58,13 @@ export async function GET(request) {
     // 2. Iterate and update matches in DB, and compute points for finished ones
     for (const fixture of fixtures) {
       const matchId = fixture.fixture.id.toString();
-      const status = fixture.fixture.status.short === 'FT' ? 'finished' : 'in_progress';
+      const shortStatus = fixture.fixture.status.short;
+      let status = 'in_progress';
+      if (['NS', 'TBD', 'PST'].includes(shortStatus)) {
+        status = 'upcoming';
+      } else if (['FT', 'AET', 'PEN', 'CANC', 'ABD', 'AWD', 'WO'].includes(shortStatus)) {
+        status = 'finished';
+      }
       const homeScore = fixture.goals.home;
       const awayScore = fixture.goals.away;
 
