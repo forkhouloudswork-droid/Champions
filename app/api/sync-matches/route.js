@@ -38,11 +38,11 @@ function calculatePoints(prediction, actualHomeScore, actualAwayScore) {
 }
 
 export async function GET(request) {
-  // Security check: ensure only cron can call this (usually via a secret header in Vercel)
-  const authHeader = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Security check temporarily bypassed for testing!
+  // const authHeader = request.headers.get('authorization');
+  // if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // }
 
   try {
     // 1. Fetch live matches from public API (api-football)
