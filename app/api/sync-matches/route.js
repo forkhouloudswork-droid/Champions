@@ -54,45 +54,60 @@ export async function GET(request) {
     console.log('SUPABASE URL present:', hasSupabaseUrl);
     console.log('SERVICE_ROLE present:', hasServiceRole);
 
-    // 1. Fetch live matches from public API (sportapi.ai)
-    const res = await fetch('https://sportapi.ai/api/leagues/14022', {
-      headers: {
-        'Authorization': `Bearer ${process.env.API_SPORTS_KEY || ''}`
-      }
-    });
-    
+    // 1. Fetch live matches from public API (sportapi7 on RapidAPI)
+    // The Club World Cup is uniqueTournament.id = 357. Since there's no "get all tournament events" endpoint,
+    // we fetch every day of the tournament (June 15, 2025 -> July 13, 2025) via Promise.all.
+    const dates = [];
+    for(let i=15; i<=30; i++) dates.push(`2025-06-${i}`);
+    for(let i=1; i<=13; i++) dates.push(`2025-07-${i < 10 ? '0'+i : i}`);
+
+    const headers = {
+      'X-RapidAPI-Key': process.env.API_SPORTS_KEY || '',
+      'X-RapidAPI-Host': 'sportapi7.p.rapidapi.com'
+    };
+
     let fixtures = [];
     let apiResponse = null;
     let upsertErrors = [];
     let upsertCount = 0;
 
-    if (res.ok) {
-      const data = await res.json();
-      apiResponse = data;
-      // SportAPI provides matches divided into recent and upcoming
-      const recent = data.recent_results || [];
-      const upcoming = data.upcoming_fixtures || [];
-      fixtures = [...recent, ...upcoming];
-    } else {
-      console.error('SportAPI HTTP Error:', res.status, res.statusText);
+    try {
+      const fetchPromises = dates.map(date => 
+        fetch(`https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`, { headers })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      );
+      
+      const results = await Promise.all(fetchPromises);
+      apiResponse = results[0]; // Just save one day for debug purposes
+
+      // Flatten and filter for Club World Cup (id 357)
+      results.forEach(day => {
+        if (day && day.events) {
+          const cwcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 357);
+          fixtures.push(...cwcEvents);
+        }
+      });
+    } catch (err) {
+      console.error('SportAPI7 Fetch Error:', err);
     }
 
-    console.log(`Found ${fixtures.length} fixtures from SportAPI.`);
+    console.log(`Found ${fixtures.length} fixtures from SportAPI7 for Club World Cup.`);
 
     // 2. Iterate and update matches in DB, and compute points for finished ones
     for (const fixture of fixtures) {
-      const matchId = fixture.id ? fixture.id.toString() : Math.random().toString();
-      const shortStatus = fixture.status || 'NS';
+      const matchId = fixture.id.toString();
+      const shortStatus = fixture.status?.type || 'notstarted';
       
       let status = 'in_progress';
-      if (['NS', 'TBD', 'PST', 'Scheduled'].includes(shortStatus)) {
+      if (['notstarted', 'canceled', 'postponed'].includes(shortStatus)) {
         status = 'upcoming';
-      } else if (['FT', 'AET', 'PEN', 'CANC', 'ABD', 'AWD', 'WO', 'Finished'].includes(shortStatus)) {
+      } else if (['finished', 'aet', 'penalties'].includes(shortStatus)) {
         status = 'finished';
       }
       
-      const homeScore = fixture.home_score !== undefined ? fixture.home_score : null;
-      const awayScore = fixture.away_score !== undefined ? fixture.away_score : null;
+      const homeScore = fixture.homeScore?.current !== undefined ? fixture.homeScore.current : null;
+      const awayScore = fixture.awayScore?.current !== undefined ? fixture.awayScore.current : null;
 
 const countryToCode = {
   'argentina': 'ar', 'australia': 'au', 'belgium': 'be', 'brazil': 'br', 
@@ -111,17 +126,20 @@ function getCountryCode(name) {
   return countryToCode[name.toLowerCase()] || name.substring(0, 2).toLowerCase();
 }
 
-      const homeTeamName = fixture.home_team || 'TBD';
-      const awayTeamName = fixture.away_team || 'TBD';
+      const homeTeamName = fixture.homeTeam?.name || 'TBD';
+      const awayTeamName = fixture.awayTeam?.name || 'TBD';
+      
+      // Start time parsing (startTimestamp is in seconds)
+      const startTime = fixture.startTimestamp ? new Date(fixture.startTimestamp * 1000).toISOString() : new Date().toISOString();
 
       // Update match
       const { error: upsertError } = await supabaseAdmin.from('matches').upsert({
         id: matchId,
         home_team: homeTeamName,
         away_team: awayTeamName,
-        home_team_code: fixture.home_logo || getCountryCode(homeTeamName),
-        away_team_code: fixture.away_logo || getCountryCode(awayTeamName),
-        start_time: fixture.date || fixture.start_time || new Date().toISOString(),
+        home_team_code: getCountryCode(homeTeamName),
+        away_team_code: getCountryCode(awayTeamName),
+        start_time: startTime,
         home_score: homeScore,
         away_score: awayScore,
         status: status
