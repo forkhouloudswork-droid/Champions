@@ -54,10 +54,10 @@ export async function GET(request) {
     console.log('SUPABASE URL present:', hasSupabaseUrl);
     console.log('SERVICE_ROLE present:', hasServiceRole);
 
-    // 1. Fetch live matches from public API (api-football)
-    const res = await fetch('https://v3.football.api-sports.io/fixtures?league=15&season=2025', {
+    // 1. Fetch live matches from public API (sportapi.ai)
+    const res = await fetch('https://sportapi.ai/api/leagues/14022', {
       headers: {
-        'x-apisports-key': process.env.API_SPORTS_KEY || ''
+        'Authorization': `Bearer ${process.env.API_SPORTS_KEY || ''}`
       }
     });
     
@@ -69,25 +69,30 @@ export async function GET(request) {
     if (res.ok) {
       const data = await res.json();
       apiResponse = data;
-      fixtures = data.response || [];
+      // SportAPI provides matches divided into recent and upcoming
+      const recent = data.recent_results || [];
+      const upcoming = data.upcoming_fixtures || [];
+      fixtures = [...recent, ...upcoming];
     } else {
-      console.error('API-Sports HTTP Error:', res.status, res.statusText);
+      console.error('SportAPI HTTP Error:', res.status, res.statusText);
     }
 
-    console.log(`Found ${fixtures.length} fixtures from API-Sports.`);
+    console.log(`Found ${fixtures.length} fixtures from SportAPI.`);
 
     // 2. Iterate and update matches in DB, and compute points for finished ones
     for (const fixture of fixtures) {
-      const matchId = fixture.fixture.id.toString();
-      const shortStatus = fixture.fixture.status.short;
+      const matchId = fixture.id ? fixture.id.toString() : Math.random().toString();
+      const shortStatus = fixture.status || 'NS';
+      
       let status = 'in_progress';
-      if (['NS', 'TBD', 'PST'].includes(shortStatus)) {
+      if (['NS', 'TBD', 'PST', 'Scheduled'].includes(shortStatus)) {
         status = 'upcoming';
-      } else if (['FT', 'AET', 'PEN', 'CANC', 'ABD', 'AWD', 'WO'].includes(shortStatus)) {
+      } else if (['FT', 'AET', 'PEN', 'CANC', 'ABD', 'AWD', 'WO', 'Finished'].includes(shortStatus)) {
         status = 'finished';
       }
-      const homeScore = fixture.goals.home;
-      const awayScore = fixture.goals.away;
+      
+      const homeScore = fixture.home_score !== undefined ? fixture.home_score : null;
+      const awayScore = fixture.away_score !== undefined ? fixture.away_score : null;
 
 const countryToCode = {
   'argentina': 'ar', 'australia': 'au', 'belgium': 'be', 'brazil': 'br', 
@@ -106,17 +111,17 @@ function getCountryCode(name) {
   return countryToCode[name.toLowerCase()] || name.substring(0, 2).toLowerCase();
 }
 
-      const homeTeamName = fixture.teams?.home?.name || 'TBD';
-      const awayTeamName = fixture.teams?.away?.name || 'TBD';
+      const homeTeamName = fixture.home_team || 'TBD';
+      const awayTeamName = fixture.away_team || 'TBD';
 
       // Update match
       const { error: upsertError } = await supabaseAdmin.from('matches').upsert({
         id: matchId,
         home_team: homeTeamName,
         away_team: awayTeamName,
-        home_team_code: fixture.teams?.home?.logo || getCountryCode(homeTeamName),
-        away_team_code: fixture.teams?.away?.logo || getCountryCode(awayTeamName),
-        start_time: fixture.fixture.date,
+        home_team_code: fixture.home_logo || getCountryCode(homeTeamName),
+        away_team_code: fixture.away_logo || getCountryCode(awayTeamName),
+        start_time: fixture.date || fixture.start_time || new Date().toISOString(),
         home_score: homeScore,
         away_score: awayScore,
         status: status
