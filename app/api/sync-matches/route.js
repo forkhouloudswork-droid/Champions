@@ -68,13 +68,33 @@ export async function GET(request) {
       const homeScore = fixture.goals.home;
       const awayScore = fixture.goals.away;
 
+const countryToCode = {
+  'argentina': 'ar', 'australia': 'au', 'belgium': 'be', 'brazil': 'br', 
+  'cameroon': 'cm', 'canada': 'ca', 'costa rica': 'cr', 'croatia': 'hr', 
+  'denmark': 'dk', 'ecuador': 'ec', 'england': 'gb-eng', 'france': 'fr', 
+  'germany': 'de', 'ghana': 'gh', 'iran': 'ir', 'japan': 'jp', 
+  'mexico': 'mx', 'morocco': 'ma', 'netherlands': 'nl', 'poland': 'pl', 
+  'portugal': 'pt', 'qatar': 'qa', 'saudi arabia': 'sa', 'senegal': 'sn', 
+  'serbia': 'rs', 'south korea': 'kr', 'spain': 'es', 'switzerland': 'ch', 
+  'tunisia': 'tn', 'uruguay': 'uy', 'usa': 'us', 'wales': 'gb-wls',
+  'italy': 'it', 'ukraine': 'ua', 'colombia': 'co', 'peru': 'pe'
+};
+
+function getCountryCode(name) {
+  if (!name || name === 'TBD') return 'xx';
+  return countryToCode[name.toLowerCase()] || name.substring(0, 2).toLowerCase();
+}
+
+      const homeTeamName = fixture.teams?.home?.name || 'TBD';
+      const awayTeamName = fixture.teams?.away?.name || 'TBD';
+
       // Update match
       await supabase.from('matches').upsert({
         id: matchId,
-        home_team: fixture.teams.home.name,
-        away_team: fixture.teams.away.name,
-        home_team_code: fixture.teams.home.name.substring(0, 2).toLowerCase(), // Mocking code
-        away_team_code: fixture.teams.away.name.substring(0, 2).toLowerCase(), // Mocking code
+        home_team: homeTeamName,
+        away_team: awayTeamName,
+        home_team_code: getCountryCode(homeTeamName),
+        away_team_code: getCountryCode(awayTeamName),
         start_time: fixture.fixture.date,
         home_score: homeScore,
         away_score: awayScore,
