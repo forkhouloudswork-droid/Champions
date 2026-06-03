@@ -41,11 +41,10 @@ export default function Dashboard() {
         setRank(userRank > 0 ? `#${userRank}` : '-');
       }
 
-      // Fetch Upcoming Matches
+      // Fetch All Matches
       const { data: upcomingMatches } = await supabase
         .from('matches')
         .select('*')
-        .eq('status', 'upcoming')
         .order('start_time', { ascending: true });
       
       if (upcomingMatches) setMatches(upcomingMatches);
@@ -172,11 +171,11 @@ export default function Dashboard() {
         {/* Predictions Panel */}
         <div className="w-full md:w-2/3">
           <div className="card h-full">
-            <h2 className="text-xl font-semibold mb-6 border-b border-border pb-4">Upcoming Matches</h2>
+            <h2 className="text-xl font-semibold mb-6 border-b border-border pb-4">FIFA World Cup Matches</h2>
             
             <div className="space-y-4">
               {matches.length === 0 ? (
-                <p className="text-muted-foreground text-sm p-4 text-center">No upcoming matches available right now.</p>
+                <p className="text-muted-foreground text-sm p-4 text-center">No matches available right now.</p>
               ) : (
                 matches.map((match) => (
                   <div key={match.id} className="p-5 rounded-lg border border-border hover:border-primary/50 transition-colors">
