@@ -1,35 +1,85 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function Login() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.user) {
+      router.push('/dashboard');
+    }
+  };
+
   return (
-    <div className="flex-grow flex items-center justify-center min-h-[80vh] px-4">
-      <div className="glass p-8 md:p-12 rounded-2xl w-full max-w-md animate-fade-in relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-[40px]" />
+    <div className="flex-grow flex items-center justify-center">
+      <div className="card w-full max-w-md">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+          <p className="text-sm text-muted-foreground mt-2">Enter your email to sign in to your account</p>
+        </div>
         
-        <h2 className="text-3xl font-bold mb-2 text-center">Welcome Back</h2>
-        <p className="text-slate-400 text-center mb-8">Log in to track your predictions.</p>
-        
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
-            <input type="email" className="input-field" placeholder="you@example.com" />
+        {error && (
+          <div className="mb-4 p-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-md">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Email</label>
+            <input 
+              type="email" 
+              required
+              className="input-field" 
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-            <input type="password" className="input-field" placeholder="••••••••" />
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Password</label>
+            </div>
+            <input 
+              type="password" 
+              required
+              className="input-field" 
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+            />
           </div>
           
-          <button type="submit" className="btn-primary w-full py-3 text-lg mt-4">
-            Sign In
+          <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
         
-        <p className="mt-8 text-center text-sm text-slate-400">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Don't have an account?{' '}
-          <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium">
+          <Link href="/signup" className="text-foreground font-medium hover:underline">
             Sign up
           </Link>
         </p>
