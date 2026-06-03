@@ -45,20 +45,36 @@ export async function GET(request) {
   // }
 
   try {
+    const hasApiKey = !!process.env.API_SPORTS_KEY;
+    const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const hasServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log('--- SYNC DEBUG START ---');
+    console.log('API_SPORTS_KEY present:', hasApiKey);
+    console.log('SUPABASE URL present:', hasSupabaseUrl);
+    console.log('SERVICE_ROLE present:', hasServiceRole);
+
     // 1. Fetch live matches from public API (api-football)
-    // Note: This uses the direct API-Football dashboard subscription.
     const res = await fetch('https://v3.football.api-sports.io/fixtures?league=15&season=2025', {
       headers: {
         'x-apisports-key': process.env.API_SPORTS_KEY || ''
       }
     });
     
-    // For local mocking if API fails/unavailable
     let fixtures = [];
+    let apiResponse = null;
+    let upsertErrors = [];
+    let upsertCount = 0;
+
     if (res.ok) {
       const data = await res.json();
+      apiResponse = data;
       fixtures = data.response || [];
+    } else {
+      console.error('API-Sports HTTP Error:', res.status, res.statusText);
     }
+
+    console.log(`Found ${fixtures.length} fixtures from API-Sports.`);
 
     // 2. Iterate and update matches in DB, and compute points for finished ones
     for (const fixture of fixtures) {
@@ -106,7 +122,12 @@ function getCountryCode(name) {
         status: status
       });
       
-      if (upsertError) console.error('Match Upsert Error:', upsertError);
+      if (upsertError) {
+        console.error(`Match Upsert Error [${matchId}]:`, upsertError);
+        upsertErrors.push(upsertError);
+      } else {
+        upsertCount++;
+      }
 
       // If finished, calculate points for all predictions related to this match
       if (status === 'finished' && homeScore !== null && awayScore !== null) {
@@ -144,7 +165,27 @@ function getCountryCode(name) {
       }
     }
 
-    return NextResponse.json({ success: true, message: 'Sync complete' });
+    console.log('--- SYNC DEBUG END ---');
+
+    return NextResponse.json({ 
+      success: true, 
+      debug: {
+        keys: {
+          hasApiKey,
+          hasSupabaseUrl,
+          hasServiceRole
+        },
+        apiSports: {
+          status: res.status,
+          fixturesFound: fixtures.length,
+          apiErrors: apiResponse?.errors || null
+        },
+        supabase: {
+          matchesUpserted: upsertCount,
+          upsertErrors: upsertErrors
+        }
+      }
+    });
   } catch (error) {
     console.error('Error syncing matches:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
