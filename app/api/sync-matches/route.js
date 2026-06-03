@@ -41,11 +41,10 @@ export async function GET(request) {
 
   try {
     // 1. Fetch live matches from public API (api-football)
-    // Note: This is a placeholder fetch. Ensure you configure your RAPID_API_KEY.
+    // Note: This uses the direct API-Football dashboard subscription.
     const res = await fetch('https://v3.football.api-sports.io/fixtures?league=1&season=2026&live=all', {
       headers: {
-        'x-rapidapi-key': process.env.RAPID_API_KEY || '',
-        'x-rapidapi-host': 'v3.football.api-sports.io'
+        'x-apisports-key': process.env.API_SPORTS_KEY || ''
       }
     });
     
