@@ -56,10 +56,9 @@ export async function GET(request) {
 
     // 1. Fetch live matches from public API (sportapi7 on RapidAPI)
     // The FIFA World Cup 2026 is uniqueTournament.id = 16.
-    // We fetch the first 5 days of the tournament (June 11, 2026 -> June 15, 2026) 
-    // to prevent hitting RapidAPI's "429 Too Many Requests" rate limit or Vercel's timeout.
-    const dates = [];
-    for(let i=11; i<=15; i++) dates.push(`2026-06-${i}`);
+    // We fetch the first 3 days of the tournament (June 11, 2026 -> June 13, 2026) 
+    // sequentially with a 1 second delay to avoid hitting RapidAPI's strict rate limits.
+    const dates = ['2026-06-11', '2026-06-12', '2026-06-13'];
 
     const headers = {
       'X-RapidAPI-Key': process.env.API_SPORTS_KEY || '',
@@ -72,22 +71,27 @@ export async function GET(request) {
     let upsertCount = 0;
 
     try {
-      const fetchPromises = dates.map(date => 
-        fetch(`https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`, { headers })
-          .then(r => r.ok ? r.json() : null)
-          .catch(() => null)
-      );
-      
-      const results = await Promise.all(fetchPromises);
-      apiResponse = results[0]; // Just save one day for debug purposes
-
-      // Flatten and filter for FIFA World Cup 2026 (id 16)
-      results.forEach(day => {
-        if (day && day.events) {
-          const wcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 16);
-          fixtures.push(...wcEvents);
+      for (const date of dates) {
+        const response = await fetch(`https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`, { headers });
+        
+        if (response.status === 429) {
+          console.warn(`Rate limited on ${date}! Stopping fetch.`);
+          break; // Stop fetching if we hit a hard rate limit
         }
-      });
+
+        if (response.ok) {
+          const day = await response.json();
+          if (!apiResponse) apiResponse = day; // Keep the first successful response for debug
+
+          if (day && day.events) {
+            const wcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 16);
+            fixtures.push(...wcEvents);
+          }
+        }
+        
+        // Wait 1 second before the next request
+        await new Promise(r => setTimeout(r, 1000));
+      }
     } catch (err) {
       console.error('SportAPI7 Fetch Error:', err);
     }
