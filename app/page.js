@@ -11,6 +11,7 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirmEmail, setConfirmEmail] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [formData, setFormData] = useState({
@@ -48,7 +49,7 @@ export default function Home() {
     const filePath = `${userId}/avatar.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from('Profile pics')
       .upload(filePath, avatarFile, { upsert: true });
 
     if (uploadError) {
@@ -57,7 +58,7 @@ export default function Home() {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
+      .from('Profile pics')
       .getPublicUrl(filePath);
 
     return publicUrl;
@@ -117,11 +118,7 @@ export default function Home() {
             .eq('id', data.user.id);
         }
 
-        setSuccess('Account created! Check your email to confirm, then sign in.');
-        setMode('signin');
-        setFormData({ email: formData.email, password: '', fullName: '' });
-        setAvatarFile(null);
-        setAvatarPreview(null);
+        setConfirmEmail(formData.email);
         setLoading(false);
       }
     }
@@ -198,6 +195,62 @@ export default function Home() {
             </div>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026 Predictions</p>
           </div>
+
+          {/* Email confirmation screen */}
+          {confirmEmail ? (
+            <div className="text-center animate-fade-in-up">
+              {/* Envelope icon */}
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+                style={{ background: 'var(--accent-dim)' }}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="3" />
+                  <path d="M2 7l10 7 10-7" />
+                </svg>
+              </div>
+
+              <h2 className="text-2xl font-bold tracking-tight mb-2" style={{ color: 'var(--text)' }}>
+                Check your inbox
+              </h2>
+              <p className="text-sm mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                We sent a confirmation link to
+              </p>
+              <p className="text-sm font-semibold mb-6" style={{ color: 'var(--accent)' }}>
+                {confirmEmail}
+              </p>
+              <p className="text-sm mb-8 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                Click the link in the email to activate your account. It may take a minute to arrive — check your spam folder too.
+              </p>
+
+              <button
+                onClick={() => {
+                  setConfirmEmail(null);
+                  setMode('signin');
+                  setFormData({ email: confirmEmail, password: '', fullName: '' });
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                }}
+                className="btn-primary text-sm w-full"
+              >
+                Back to sign in
+              </button>
+
+              <button
+                onClick={() => {
+                  setConfirmEmail(null);
+                  setMode('signup');
+                  setFormData({ email: '', password: '', fullName: '' });
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                }}
+                className="btn-ghost text-xs mt-4 w-full"
+              >
+                Use a different email
+              </button>
+            </div>
+          ) : (
+          <>
 
           {/* Mode toggle */}
           <div
@@ -370,6 +423,8 @@ export default function Home() {
               {mode === 'signin' ? 'Sign up' : 'Sign in'}
             </button>
           </p>
+          </>
+          )}
         </div>
       </div>
     </div>
