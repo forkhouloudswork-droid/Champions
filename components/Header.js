@@ -57,10 +57,12 @@ export default function Header() {
         <div className="flex justify-between items-center h-14">
           {/* Logo */}
           <Link href={user ? '/leaderboard' : '/'} className="flex items-center gap-2 group">
-            <span className="text-lg font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-              Champion
-            </span>
-            <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>EX</span>
+            <img 
+              src="/CEX.png" 
+              alt="ChampionEX" 
+              className="h-6 w-auto" 
+              style={{ filter: 'brightness(0) invert(1)' }} 
+            />
           </Link>
 
           {/* Desktop nav */}

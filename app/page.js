@@ -171,9 +171,8 @@ export default function Home() {
         />
 
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Champion</span>
-            <span className="text-xl font-bold" style={{ color: 'var(--accent)' }}>EX</span>
+          <div className="flex items-center mb-2">
+            <img src="/CEX.png" alt="ChampionEX" className="h-8 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
           </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026</p>
         </div>
@@ -188,17 +187,24 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="flex gap-8 relative z-10">
-          {[
-            { value: '48', label: 'Teams' },
-            { value: '104', label: 'Matches' },
-            { value: 'Live', label: 'Scoring' },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{stat.value}</div>
-              <div className="text-xs uppercase tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
-            </div>
-          ))}
+        <div className="flex items-end justify-between relative z-10 w-full">
+          <div className="flex gap-8">
+            {[
+              { value: '48', label: 'Teams' },
+              { value: '104', label: 'Matches' },
+              { value: 'Live', label: 'Scoring' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <div className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{stat.value}</div>
+                <div className="text-xs uppercase tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-right pb-1">
+            <div className="text-[10px] uppercase tracking-widest font-bold mb-1 opacity-50" style={{ color: 'var(--text-muted)' }}>Powered by</div>
+            <img src="/TLS.png" alt="TLS" className="h-5 w-auto opacity-70 inline-block" style={{ filter: 'brightness(0) invert(1)' }} />
+          </div>
         </div>
       </div>
 
@@ -207,9 +213,8 @@ export default function Home() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Champion</span>
-              <span className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>EX</span>
+            <div className="flex items-center justify-center mb-2">
+              <img src="/CEX.png" alt="ChampionEX" className="h-8 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
             </div>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026 Predictions</p>
           </div>
