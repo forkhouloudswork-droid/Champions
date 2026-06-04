@@ -1,22 +1,20 @@
 import './globals.css'
-import Header from '@/components/Header';
 
 export const metadata = {
-  title: 'ChampionEX - Football Predictions',
-  description: 'Predict match results and climb the leaderboard.',
+  title: 'ChampionEX — FIFA World Cup Predictions',
+  description: 'Predict match results, climb the leaderboard, and prove you know football.',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="antialiased flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   )

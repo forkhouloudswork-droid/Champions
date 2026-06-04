@@ -2,22 +2,24 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import CountryFlag from '@/components/CountryFlag';
+import Header from '@/components/Header';
+import MatchCard from '@/components/MatchCard';
 
 export default function Dashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-  const [rank, setRank] = useState('-');
+  const [rank, setRank] = useState(null);
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState({});
+  const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'finished'
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 
@@ -37,19 +39,19 @@ export default function Dashboard() {
         .order('points', { ascending: false });
       
       if (allProfiles) {
-        const userRank = allProfiles.findIndex(p => p.id === session.user.id) + 1;
-        setRank(userRank > 0 ? `#${userRank}` : '-');
+        const idx = allProfiles.findIndex(p => p.id === session.user.id) + 1;
+        setRank(idx > 0 ? idx : null);
       }
 
       // Fetch All Matches
-      const { data: upcomingMatches } = await supabase
+      const { data: allMatches } = await supabase
         .from('matches')
         .select('*')
         .order('start_time', { ascending: true });
       
-      if (upcomingMatches) setMatches(upcomingMatches);
+      if (allMatches) setMatches(allMatches);
 
-      // Fetch User Predictions for these matches
+      // Fetch User Predictions
       const { data: userPredictions } = await supabase
         .from('predictions')
         .select('*')
@@ -62,7 +64,8 @@ export default function Dashboard() {
             id: p.id,
             home_score: p.home_score,
             away_score: p.away_score,
-            modifications: p.modifications || 0
+            modifications: p.modifications || 0,
+            points_awarded: p.points_awarded,
           };
         });
         setPredictions(predMap);
@@ -74,168 +77,188 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [router]);
 
-  const handlePredictionChange = (matchId, team, value) => {
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: {
-        ...prev[matchId],
-        [`${team}_score`]: parseInt(value) || 0
-      }
-    }));
-  };
-
-  const savePrediction = async (matchId) => {
-    const pred = predictions[matchId];
-    if (!pred || pred.home_score === undefined || pred.away_score === undefined) return;
-
+  const handleSave = async (matchId, homeScore, awayScore, existingPred) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    if (pred.id) {
-      // Update
+    if (existingPred?.id) {
       await supabase
         .from('predictions')
-        .update({ 
-          home_score: pred.home_score, 
-          away_score: pred.away_score,
-          modifications: pred.modifications + 1
+        .update({
+          home_score: homeScore,
+          away_score: awayScore,
+          modifications: (existingPred.modifications || 0) + 1,
         })
-        .eq('id', pred.id);
-      
-      // Update local modification count
+        .eq('id', existingPred.id);
+
       setPredictions(prev => ({
         ...prev,
-        [matchId]: { ...prev[matchId], modifications: pred.modifications + 1 }
+        [matchId]: {
+          ...prev[matchId],
+          home_score: homeScore,
+          away_score: awayScore,
+          modifications: (existingPred.modifications || 0) + 1,
+        }
       }));
     } else {
-      // Insert
       const { data } = await supabase
         .from('predictions')
         .insert({
           user_id: session.user.id,
           match_id: matchId,
-          home_score: pred.home_score,
-          away_score: pred.away_score
+          home_score: homeScore,
+          away_score: awayScore,
         })
         .select()
         .single();
-        
+
       if (data) {
         setPredictions(prev => ({
           ...prev,
-          [matchId]: { ...prev[matchId], id: data.id, modifications: 0 }
+          [matchId]: {
+            id: data.id,
+            home_score: homeScore,
+            away_score: awayScore,
+            modifications: 0,
+            points_awarded: null,
+          }
         }));
       }
     }
-    alert('Prediction saved!');
   };
 
+  // Group matches by date
+  const filteredMatches = matches.filter(m => {
+    if (filter === 'upcoming') return m.status !== 'finished';
+    if (filter === 'finished') return m.status === 'finished';
+    return true;
+  });
+
+  const grouped = {};
+  filteredMatches.forEach(m => {
+    const dateKey = new Date(m.start_time).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(m);
+  });
+
+  const predictedCount = Object.keys(predictions).length;
+  const totalCount = matches.filter(m => m.status !== 'finished').length;
+
   if (loading) {
-    return <div className="p-12 text-center text-muted-foreground">Loading dashboard...</div>;
+    return (
+      <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+        <Header />
+        <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8">
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton h-48 w-full" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full">
-      <h1 className="text-3xl font-bold mb-8 tracking-tight">Dashboard</h1>
-      
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* User Stats Panel */}
-        <div className="w-full md:w-1/3">
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-6 border-b border-border pb-4">Your Stats</h2>
-            
-            <div className="flex flex-col items-center mb-6">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full border border-border mb-3 object-cover" />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-muted border border-border flex items-center justify-center text-2xl font-bold mb-3 uppercase">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </div>
-              )}
-              <p className="font-medium">{profile?.full_name || 'User'}</p>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      <Header />
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8">
+        {/* Stats bar */}
+        <div
+          className="flex items-center justify-between rounded-2xl px-5 py-4 mb-6"
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex items-center gap-4">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover"
+                style={{ border: '2px solid var(--border)' }}
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '2px solid var(--border)' }}
+              >
+                {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                {profile?.full_name || 'User'}
+              </div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {rank ? `Rank #${rank}` : 'Unranked'}
+              </div>
             </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md border border-border">
-                <span className="text-muted-foreground text-sm font-medium">Total Points</span>
-                <span className="text-lg font-bold">{profile?.points || 0}</span>
+          </div>
+          <div className="flex gap-6">
+            <div className="text-right">
+              <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
+                {profile?.points || 0}
               </div>
-              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md border border-border">
-                <span className="text-muted-foreground text-sm font-medium">Global Rank</span>
-                <span className="text-lg font-bold">{rank}</span>
+              <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Points</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold" style={{ color: 'var(--text)' }}>
+                {predictedCount}/{totalCount}
               </div>
+              <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Predicted</div>
             </div>
           </div>
         </div>
 
-        {/* Predictions Panel */}
-        <div className="w-full md:w-2/3">
-          <div className="card h-full">
-            <h2 className="text-xl font-semibold mb-6 border-b border-border pb-4">FIFA World Cup Matches</h2>
-            
-            <div className="space-y-4">
-              {matches.length === 0 ? (
-                <p className="text-muted-foreground text-sm p-4 text-center">No matches available right now.</p>
-              ) : (
-                matches.map((match) => (
-                  <div key={match.id} className="p-5 rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <div className="flex justify-between text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                      <span>{new Date(match.start_time).toLocaleDateString()}</span>
-                      <span>{new Date(match.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col items-center gap-2 w-1/3 text-center">
-                        <CountryFlag code={match.home_team_code} name={match.home_team} size={40} />
-                        <span className="font-semibold text-sm mt-2">{match.home_team}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 w-1/3 justify-center">
-                        <input 
-                          type="number" 
-                          min="0"
-                          value={predictions[match.id]?.home_score ?? ''}
-                          onChange={(e) => handlePredictionChange(match.id, 'home', e.target.value)}
-                          className="w-12 h-12 text-center bg-background border border-border rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-border focus:border-primary" 
-                          placeholder="-"
-                        />
-                        <span className="text-muted-foreground font-bold">-</span>
-                        <input 
-                          type="number" 
-                          min="0"
-                          value={predictions[match.id]?.away_score ?? ''}
-                          onChange={(e) => handlePredictionChange(match.id, 'away', e.target.value)}
-                          className="w-12 h-12 text-center bg-background border border-border rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-border focus:border-primary" 
-                          placeholder="-"
-                        />
-                      </div>
-                      
-                      <div className="flex flex-col items-center gap-2 w-1/3 text-center">
-                        <CountryFlag code={match.away_team_code} name={match.away_team} size={40} />
-                        <span className="font-semibold text-sm mt-2">{match.away_team}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
-                      <span className="text-xs text-muted-foreground">
-                        {predictions[match.id]?.modifications > 0 
-                          ? `Modified ${predictions[match.id].modifications} time(s) - ${(predictions[match.id].modifications * 10)}% penalty applied` 
-                          : 'No modifications yet (0% penalty)'}
-                      </span>
-                      <button 
-                        onClick={() => savePrediction(match.id)}
-                        className="btn-secondary text-sm"
-                      >
-                        {predictions[match.id]?.id ? 'Update Prediction' : 'Save Prediction'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+        {/* Filter tabs */}
+        <div className="flex gap-1 mb-6">
+          {[
+            { key: 'all', label: 'All Matches' },
+            { key: 'upcoming', label: 'Upcoming' },
+            { key: 'finished', label: 'Finished' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className="px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-150"
+              style={filter === tab.key
+                ? { background: 'var(--accent-dim)', color: 'var(--accent)' }
+                : { color: 'var(--text-muted)' }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </div>
+
+        {/* Match list grouped by date */}
+        {Object.keys(grouped).length === 0 ? (
+          <div className="card text-center py-12">
+            <p style={{ color: 'var(--text-muted)' }}>No matches found for this filter.</p>
+          </div>
+        ) : (
+          Object.entries(grouped).map(([date, dateMatches]) => (
+            <div key={date} className="mb-6">
+              <div className="date-divider">{date}</div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {dateMatches.map((match, i) => (
+                  <div key={match.id} className={`animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}>
+                    <MatchCard
+                      match={match}
+                      prediction={predictions[match.id]}
+                      onSave={handleSave}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </main>
     </div>
   );
 }

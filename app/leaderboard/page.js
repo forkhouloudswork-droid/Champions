@@ -1,82 +1,149 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import Header from '@/components/Header';
+import Podium from '@/components/Podium';
 
 export default function Leaderboard() {
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      // Get current user session to highlight them
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setCurrentUser(session.user);
+      if (!session) {
+        router.push('/');
+        return;
+      }
+      setCurrentUserId(session.user.id);
 
-      // Fetch leaderboard
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, points')
+        .select('id, full_name, avatar_url, points')
         .order('points', { ascending: false });
 
       if (data) {
-        setUsers(data.map((u, i) => ({ 
+        setUsers(data.map((u, i) => ({
           id: u.id,
-          rank: i + 1, 
-          name: u.full_name || 'Anonymous', 
-          points: u.points || 0 
+          rank: i + 1,
+          name: u.full_name || 'Anonymous',
+          avatar_url: u.avatar_url || null,
+          points: u.points || 0,
         })));
       }
       setLoading(false);
     };
-    
     fetchData();
-  }, []);
+  }, [router]);
+
+  const top3 = users.slice(0, 3);
+  const rest = users.slice(3);
+  const currentUserRank = users.findIndex(u => u.id === currentUserId) + 1;
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Leaderboard</h1>
-        <p className="text-muted-foreground">Global rankings based on total points.</p>
-      </div>
-
-      <div className="card p-0 overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 p-4 border-b border-border bg-muted/30 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          <div className="col-span-2 text-center">Rank</div>
-          <div className="col-span-7">Player</div>
-          <div className="col-span-3 text-right">Points</div>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      <Header />
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8">
+        {/* Header area */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: 'var(--text)' }}>
+            Leaderboard
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {currentUserRank > 0
+              ? `You're currently ranked #${currentUserRank} out of ${users.length} players`
+              : 'Global rankings'}
+          </p>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground">Loading leaderboard...</div>
-        ) : users.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">No users found.</div>
-        ) : (
-          <div className="divide-y divide-border">
-            {users.map((user) => (
-              <div 
-                key={user.id} 
-                className={`grid grid-cols-12 gap-4 p-4 items-center transition-colors hover:bg-muted/30 ${
-                  currentUser?.id === user.id ? 'bg-primary/5' : ''
-                }`}
-              >
-                <div className="col-span-2 text-center font-medium">
-                  {user.rank}
-                </div>
-                <div className="col-span-7 font-medium flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] uppercase">
-                    {user.name.charAt(0)}
-                  </div>
-                  {user.name} {currentUser?.id === user.id && <span className="text-xs text-muted-foreground ml-2">(You)</span>}
-                </div>
-                <div className="col-span-3 text-right font-bold">
-                  {user.points}
-                </div>
-              </div>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="skeleton h-14 w-full" />
             ))}
           </div>
+        ) : users.length === 0 ? (
+          <div className="card text-center py-12">
+            <p style={{ color: 'var(--text-muted)' }}>No players yet. Be the first!</p>
+          </div>
+        ) : (
+          <>
+            {/* Podium */}
+            <div className="card mb-6" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+              <Podium users={top3} currentUserId={currentUserId} />
+            </div>
+
+            {/* Rest of the leaderboard */}
+            {rest.length > 0 && (
+              <div className="card-flush">
+                <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                  {rest.map((user, i) => {
+                    const isMe = user.id === currentUserId;
+                    return (
+                      <div
+                        key={user.id}
+                        className={`flex items-center gap-4 px-5 py-3.5 transition-colors duration-150 animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}
+                        style={{
+                          background: isMe ? 'var(--accent-dim)' : 'transparent',
+                          borderBottom: '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        {/* Rank */}
+                        <span
+                          className="w-8 text-center text-sm font-bold"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          {user.rank}
+                        </span>
+
+                        {/* Avatar */}
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover"
+                            style={{ border: '2px solid var(--border)' }}
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
+                            style={{
+                              background: 'var(--bg-elevated)',
+                              border: '2px solid var(--border)',
+                              color: 'var(--text-muted)',
+                            }}
+                          >
+                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                        )}
+
+                        {/* Name */}
+                        <span
+                          className="flex-1 text-sm font-medium truncate"
+                          style={{ color: isMe ? 'var(--accent)' : 'var(--text)' }}
+                        >
+                          {user.name}
+                          {isMe && (
+                            <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>(you)</span>
+                          )}
+                        </span>
+
+                        {/* Points */}
+                        <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
+                          {user.points}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </main>
     </div>
   );
 }
