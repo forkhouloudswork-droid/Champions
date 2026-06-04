@@ -14,6 +14,8 @@ export default function Home() {
   const [confirmEmail, setConfirmEmail] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [userCount, setUserCount] = useState(0);
+  const [displayCount, setDisplayCount] = useState(0);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,9 +30,31 @@ export default function Home() {
       } else {
         setChecking(false);
       }
+      
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      if (count !== null) setUserCount(count);
     };
     check();
   }, [router]);
+
+  useEffect(() => {
+    if (userCount === 0) return;
+    let start = 0;
+    const duration = 2000;
+    const increment = userCount / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= userCount) {
+        setDisplayCount(userCount);
+        clearInterval(timer);
+      } else {
+        setDisplayCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [userCount]);
 
   const handleAvatarSelect = (e) => {
     const file = e.target.files?.[0];
@@ -283,6 +307,15 @@ export default function Home() {
             </div>
           ) : (
           <>
+          {/* Ticking Counter */}
+          {userCount > 0 && (
+            <div className="mb-8 p-4 rounded-xl text-center shadow-lg animate-fade-in-up" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)' }}>
+              <div className="text-3xl font-bold mb-1 tracking-tight" style={{ color: 'var(--accent)' }}>{displayCount.toLocaleString()}</div>
+              <div className="text-xs uppercase tracking-wider font-semibold opacity-90" style={{ color: 'var(--accent)' }}>
+                Compete with {displayCount.toLocaleString()} people to be on the top
+              </div>
+            </div>
+          )}
 
           {/* Mode toggle */}
           <div
