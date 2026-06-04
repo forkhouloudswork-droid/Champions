@@ -309,10 +309,19 @@ export default function Home() {
           <>
           {/* Ticking Counter */}
           {userCount > 0 && (
-            <div className="mb-8 p-4 rounded-xl text-center shadow-lg animate-fade-in-up" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)' }}>
-              <div className="text-3xl font-bold mb-1 tracking-tight" style={{ color: 'var(--accent)' }}>{displayCount.toLocaleString()}</div>
-              <div className="text-xs uppercase tracking-wider font-semibold opacity-90" style={{ color: 'var(--accent)' }}>
-                Compete with {displayCount.toLocaleString()} people to be on the top
+            <div className="mb-10 text-center animate-fade-in-up">
+              <div 
+                className="text-6xl sm:text-7xl font-black mb-2 tracking-tighter tabular-nums" 
+                style={{ 
+                  color: 'var(--text)',
+                  textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  lineHeight: '1'
+                }}
+              >
+                {displayCount.toLocaleString()}
+              </div>
+              <div className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--accent)' }}>
+                Compete with {userCount.toLocaleString()} people to be on the top
               </div>
             </div>
           )}
