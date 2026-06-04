@@ -38,20 +38,38 @@ export default function EditProfileModal({ isOpen, onClose, profile, onSave }) {
     const fileExt = avatarFile.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('Profile pics')
-      .upload(filePath, avatarFile, { upsert: true });
+    try {
+      // 1. Get signed URL
+      const res = await fetch('/api/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath, contentType: avatarFile.type || 'image/jpeg' })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to get upload URL');
 
-    if (uploadError) {
-      console.error('Avatar upload error:', uploadError);
+      // 2. Upload directly to S3
+      const uploadRes = await fetch(data.signedUrl, {
+        method: 'PUT',
+        body: avatarFile,
+        headers: {
+          'Content-Type': avatarFile.type || 'image/jpeg'
+        }
+      });
+
+      if (!uploadRes.ok) throw new Error('Failed to upload file to S3');
+
+      // 3. Get the public URL from Supabase standard client
+      const { data: { publicUrl } } = supabase.storage
+        .from('Profile pics')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Avatar upload error:', err);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('Profile pics')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
   const handleSubmit = async (e) => {
