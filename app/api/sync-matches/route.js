@@ -54,64 +54,50 @@ export async function GET(request) {
     console.log('SUPABASE URL present:', hasSupabaseUrl);
     console.log('SERVICE_ROLE present:', hasServiceRole);
 
-    // 1. Fetch live matches from public API (sportapi7 on RapidAPI)
-    // The FIFA World Cup 2026 is uniqueTournament.id = 16.
-    // We fetch the first 3 days of the tournament (June 11, 2026 -> June 13, 2026) 
-    // sequentially with a 1 second delay to avoid hitting RapidAPI's strict rate limits.
-    const dates = ['2026-06-11', '2026-06-12', '2026-06-13'];
-
+    // 1. Fetch live matches from public API (football-data.org)
+    // The FIFA World Cup competition code is 'WC'. We explicitly request the 2026 season.
+    const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026';
+    
     const headers = {
-      'X-RapidAPI-Key': process.env.API_SPORTS_KEY || '',
-      'X-RapidAPI-Host': 'sportapi7.p.rapidapi.com'
+      'X-Auth-Token': process.env.API_SPORTS_KEY || ''
     };
 
     let fixtures = [];
     let apiResponse = null;
+    let apiStatus = 500;
     let upsertErrors = [];
     let upsertCount = 0;
 
     try {
-      for (const date of dates) {
-        const response = await fetch(`https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`, { headers });
-        
-        if (response.status === 429) {
-          console.warn(`Rate limited on ${date}! Stopping fetch.`);
-          break; // Stop fetching if we hit a hard rate limit
-        }
-
-        if (response.ok) {
-          const day = await response.json();
-          if (!apiResponse) apiResponse = day; // Keep the first successful response for debug
-
-          if (day && day.events) {
-            const wcEvents = day.events.filter(e => e.tournament?.uniqueTournament?.id === 16);
-            fixtures.push(...wcEvents);
-          }
-        }
-        
-        // Wait 1 second before the next request
-        await new Promise(r => setTimeout(r, 1000));
+      const response = await fetch(url, { headers });
+      apiStatus = response.status;
+      apiResponse = await response.json();
+      
+      if (response.ok) {
+        fixtures = apiResponse.matches || [];
+      } else {
+        console.error('Football-Data API Error:', apiResponse);
       }
     } catch (err) {
-      console.error('SportAPI7 Fetch Error:', err);
+      console.error('Football-Data Fetch Error:', err);
     }
 
-    console.log(`Found ${fixtures.length} fixtures from SportAPI7 for FIFA World Cup 2026.`);
+    console.log(`Found ${fixtures.length} fixtures from Football-Data for FIFA World Cup 2026.`);
 
     // 2. Iterate and update matches in DB, and compute points for finished ones
-    for (const fixture of fixtures) {
-      const matchId = fixture.id.toString();
-      const shortStatus = fixture.status?.type || 'notstarted';
+    for (const match of fixtures) {
+      const matchId = match.id.toString();
+      const rawStatus = match.status || 'SCHEDULED';
       
       let status = 'in_progress';
-      if (['notstarted', 'canceled', 'postponed'].includes(shortStatus)) {
+      if (['SCHEDULED', 'CANCELED', 'POSTPONED'].includes(rawStatus)) {
         status = 'upcoming';
-      } else if (['finished', 'aet', 'penalties'].includes(shortStatus)) {
+      } else if (['FINISHED', 'AWARDED'].includes(rawStatus)) {
         status = 'finished';
       }
       
-      const homeScore = fixture.homeScore?.current !== undefined ? fixture.homeScore.current : null;
-      const awayScore = fixture.awayScore?.current !== undefined ? fixture.awayScore.current : null;
+      const homeScore = match.score?.fullTime?.home !== undefined ? match.score.fullTime.home : null;
+      const awayScore = match.score?.fullTime?.away !== undefined ? match.score.fullTime.away : null;
 
 const countryToCode = {
   'argentina': 'ar', 'australia': 'au', 'belgium': 'be', 'brazil': 'br', 
@@ -130,11 +116,9 @@ function getCountryCode(name) {
   return countryToCode[name.toLowerCase()] || name.substring(0, 2).toLowerCase();
 }
 
-      const homeTeamName = fixture.homeTeam?.name || 'TBD';
-      const awayTeamName = fixture.awayTeam?.name || 'TBD';
-      
-      // Start time parsing (startTimestamp is in seconds)
-      const startTime = fixture.startTimestamp ? new Date(fixture.startTimestamp * 1000).toISOString() : new Date().toISOString();
+      const homeTeamName = match.homeTeam?.name || 'TBD';
+      const awayTeamName = match.awayTeam?.name || 'TBD';
+      const startTime = match.utcDate || new Date().toISOString();
 
       // Update match
       const { error: upsertError } = await supabaseAdmin.from('matches').upsert({
@@ -203,7 +187,7 @@ function getCountryCode(name) {
           hasServiceRole
         },
         apiSports: {
-          status: apiResponse ? 200 : (fixtures.length === 0 ? 429 : 500),
+          status: apiStatus,
           fixturesFound: fixtures.length,
           apiErrors: apiResponse?.message || null
         },
