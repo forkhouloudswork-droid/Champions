@@ -203,7 +203,7 @@ export default function Home() {
 
           <div className="text-right pb-1">
             <div className="text-[10px] uppercase tracking-widest font-bold mb-1 opacity-50" style={{ color: 'var(--text-muted)' }}>Powered by</div>
-            <img src="/TLS.png" alt="TLS" className="h-5 w-auto opacity-70 inline-block" style={{ filter: 'brightness(0) invert(1)' }} />
+            <img src="/TLS.png" alt="TLS" className="h-10 w-auto opacity-70 inline-block" style={{ filter: 'brightness(0) invert(1)' }} />
           </div>
         </div>
       </div>
