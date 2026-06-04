@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import MatchCard from '@/components/MatchCard';
+import EditProfileModal from '@/components/EditProfileModal';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState({});
   const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'finished'
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -199,7 +201,30 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-4 sm:gap-6 flex-shrink-0">
+            
+            <button 
+              onClick={() => setIsEditingProfile(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              Edit
+            </button>
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="sm:hidden p-2 rounded-md transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            
+            <div className="flex gap-4 sm:gap-6 flex-shrink-0 ml-auto sm:ml-0">
               <div className="text-right">
                 <div className="text-base sm:text-lg font-bold" style={{ color: 'var(--accent)' }}>
                   {profile?.points || 0}
@@ -261,6 +286,13 @@ export default function Dashboard() {
           ))
         )}
       </main>
+
+      <EditProfileModal
+        isOpen={isEditingProfile}
+        onClose={() => setIsEditingProfile(false)}
+        profile={profile}
+        onSave={(updatedProfile) => setProfile(updatedProfile)}
+      />
     </div>
   );
 }
