@@ -99,25 +99,12 @@ export async function GET(request) {
       const homeScore = match.score?.fullTime?.home !== undefined ? match.score.fullTime.home : null;
       const awayScore = match.score?.fullTime?.away !== undefined ? match.score.fullTime.away : null;
 
-const countryToCode = {
-  'argentina': 'ar', 'australia': 'au', 'belgium': 'be', 'brazil': 'br', 
-  'cameroon': 'cm', 'canada': 'ca', 'costa rica': 'cr', 'croatia': 'hr', 
-  'denmark': 'dk', 'ecuador': 'ec', 'england': 'gb-eng', 'france': 'fr', 
-  'germany': 'de', 'ghana': 'gh', 'iran': 'ir', 'japan': 'jp', 
-  'mexico': 'mx', 'morocco': 'ma', 'netherlands': 'nl', 'poland': 'pl', 
-  'portugal': 'pt', 'qatar': 'qa', 'saudi arabia': 'sa', 'senegal': 'sn', 
-  'serbia': 'rs', 'south korea': 'kr', 'spain': 'es', 'switzerland': 'ch', 
-  'tunisia': 'tn', 'uruguay': 'uy', 'usa': 'us', 'wales': 'gb-wls',
-  'italy': 'it', 'ukraine': 'ua', 'colombia': 'co', 'peru': 'pe'
-};
-
-function getCountryCode(name) {
-  if (!name || name === 'TBD') return 'xx';
-  return countryToCode[name.toLowerCase()] || name.substring(0, 2).toLowerCase();
-}
-
       const homeTeamName = match.homeTeam?.name || 'TBD';
       const awayTeamName = match.awayTeam?.name || 'TBD';
+      
+      const homeTeamCrest = match.homeTeam?.crest || '';
+      const awayTeamCrest = match.awayTeam?.crest || '';
+      
       const startTime = match.utcDate || new Date().toISOString();
 
       // Update match
@@ -125,8 +112,8 @@ function getCountryCode(name) {
         id: matchId,
         home_team: homeTeamName,
         away_team: awayTeamName,
-        home_team_code: getCountryCode(homeTeamName),
-        away_team_code: getCountryCode(awayTeamName),
+        home_team_code: homeTeamCrest,
+        away_team_code: awayTeamCrest,
         start_time: startTime,
         home_score: homeScore,
         away_score: awayScore,
