@@ -166,6 +166,9 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-96 h-96 opacity-[0.03]"
           style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
         />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] opacity-[0.03] pointer-events-none flex items-center justify-center">
+          <img src="/2026_FIFA_World_Cup_emblem.svg" alt="" className="w-full h-full object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+        </div>
         <div className="absolute bottom-0 left-0 w-64 h-64 opacity-[0.04]"
           style={{ background: 'radial-gradient(circle, var(--accent-blue) 0%, transparent 70%)' }}
         />
@@ -174,7 +177,10 @@ export default function Home() {
           <div className="flex items-center mb-2">
             <img src="/CEX.png" alt="ChampionEX" className="h-8 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
           </div>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026</p>
+          <div className="flex items-center gap-2">
+            <img src="/2026_FIFA_World_Cup_emblem.svg" alt="FIFA 2026 Emblem" className="h-5 w-auto opacity-80" style={{ filter: 'brightness(0) invert(1)' }} />
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026</p>
+          </div>
         </div>
 
         <div className="relative z-10">
@@ -216,7 +222,10 @@ export default function Home() {
             <div className="flex items-center justify-center mb-2">
               <img src="/CEX.png" alt="ChampionEX" className="h-8 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026 Predictions</p>
+            <div className="flex items-center justify-center gap-2">
+              <img src="/2026_FIFA_World_Cup_emblem.svg" alt="FIFA 2026 Emblem" className="h-4 w-auto opacity-80" style={{ filter: 'brightness(0) invert(1)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026 Predictions</p>
+            </div>
           </div>
 
           {/* Email confirmation screen */}
