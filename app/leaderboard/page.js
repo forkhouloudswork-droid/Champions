@@ -14,11 +14,9 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/');
-        return;
+      if (session) {
+        setCurrentUserId(session.user.id);
       }
-      setCurrentUserId(session.user.id);
 
       const { data } = await supabase
         .from('profiles')
@@ -37,7 +35,7 @@ export default function Leaderboard() {
       setLoading(false);
     };
     fetchData();
-  }, [router]);
+  }, []);
 
   const top3 = users.slice(0, 3);
   const rest = users.slice(3);
@@ -85,7 +83,7 @@ export default function Leaderboard() {
                     return (
                       <div
                         key={user.id}
-                        className={`flex items-center gap-4 px-5 py-3.5 transition-colors duration-150 animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}
+                        className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors duration-150 animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}
                         style={{
                           background: isMe ? 'var(--accent-dim)' : 'transparent',
                           borderBottom: '1px solid var(--border-subtle)',
@@ -122,7 +120,7 @@ export default function Leaderboard() {
 
                         {/* Name */}
                         <span
-                          className="flex-1 text-sm font-medium truncate"
+                          className="flex-1 text-sm font-medium"
                           style={{ color: isMe ? 'var(--accent)' : 'var(--text)' }}
                         >
                           {user.name}

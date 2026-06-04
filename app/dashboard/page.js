@@ -170,46 +170,48 @@ export default function Dashboard() {
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8">
         {/* Stats bar */}
         <div
-          className="flex items-center justify-between rounded-2xl px-5 py-4 mb-6"
+          className="rounded-2xl px-4 sm:px-5 py-4 mb-6"
           style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
         >
-          <div className="flex items-center gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt=""
-                className="w-10 h-10 rounded-full object-cover"
-                style={{ border: '2px solid var(--border)' }}
-              />
-            ) : (
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '2px solid var(--border)' }}
-              >
-                {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
-              </div>
-            )}
-            <div>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-                {profile?.full_name || 'User'}
-              </div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {rank ? `Rank #${rank}` : 'Unranked'}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                  style={{ border: '2px solid var(--border)' }}
+                />
+              ) : (
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                  style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '2px solid var(--border)' }}
+                >
+                  {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                  {profile?.full_name || 'User'}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {rank ? `Rank #${rank}` : 'Unranked'}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex gap-6">
-            <div className="text-right">
-              <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                {profile?.points || 0}
+            <div className="flex gap-4 sm:gap-6 flex-shrink-0">
+              <div className="text-right">
+                <div className="text-base sm:text-lg font-bold" style={{ color: 'var(--accent)' }}>
+                  {profile?.points || 0}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Points</div>
               </div>
-              <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Points</div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold" style={{ color: 'var(--text)' }}>
-                {predictedCount}/{totalCount}
+              <div className="text-right">
+                <div className="text-base sm:text-lg font-bold" style={{ color: 'var(--text)' }}>
+                  {predictedCount}/{totalCount}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Predicted</div>
               </div>
-              <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Predicted</div>
             </div>
           </div>
         </div>

@@ -1,22 +1,24 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const router = useRouter();
-  const [mode, setMode] = useState('signin'); // 'signin' or 'signup'
+  const fileInputRef = useRef(null);
+  const [mode, setMode] = useState('signin');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     fullName: '',
   });
 
-  // Redirect if already logged in
   useEffect(() => {
     const check = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -28,6 +30,38 @@ export default function Home() {
     };
     check();
   }, [router]);
+
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be under 2MB');
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const uploadAvatar = async (userId) => {
+    if (!avatarFile) return null;
+    const fileExt = avatarFile.name.split('.').pop();
+    const filePath = `${userId}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, avatarFile, { upsert: true });
+
+    if (uploadError) {
+      console.error('Avatar upload error:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,6 +81,7 @@ export default function Home() {
       }
       if (data?.user) router.push('/leaderboard');
     } else {
+      // Sign up
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -67,9 +102,26 @@ export default function Home() {
           setLoading(false);
           return;
         }
+
+        // Upload avatar if provided
+        let avatarUrl = null;
+        if (avatarFile) {
+          avatarUrl = await uploadAvatar(data.user.id);
+        }
+
+        // Update profile with avatar URL
+        if (avatarUrl) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: avatarUrl })
+            .eq('id', data.user.id);
+        }
+
         setSuccess('Account created! Check your email to confirm, then sign in.');
         setMode('signin');
-        setFormData({ ...formData, password: '' });
+        setFormData({ email: formData.email, password: '', fullName: '' });
+        setAvatarFile(null);
+        setAvatarPreview(null);
         setLoading(false);
       }
     }
@@ -96,16 +148,11 @@ export default function Home() {
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #0f1117 0%, #1a1d27 50%, #1a1825 100%)' }}
       >
-        {/* Subtle geometric accents */}
         <div className="absolute top-0 right-0 w-96 h-96 opacity-[0.03]"
-          style={{
-            background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
-          }}
+          style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }}
         />
         <div className="absolute bottom-0 left-0 w-64 h-64 opacity-[0.04]"
-          style={{
-            background: 'radial-gradient(circle, var(--accent-blue) 0%, transparent 70%)',
-          }}
+          style={{ background: 'radial-gradient(circle, var(--accent-blue) 0%, transparent 70%)' }}
         />
 
         <div>
@@ -144,9 +191,12 @@ export default function Home() {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12" style={{ background: 'var(--bg)' }}>
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Champion</span>
-            <span className="text-xl font-bold" style={{ color: 'var(--accent)' }}>EX</span>
+          <div className="lg:hidden text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Champion</span>
+              <span className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>EX</span>
+            </div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>FIFA World Cup 2026 Predictions</p>
           </div>
 
           {/* Mode toggle */}
@@ -156,7 +206,7 @@ export default function Home() {
           >
             <button
               onClick={() => switchMode('signin')}
-              className="flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200"
+              className="flex-1 py-2.5 text-sm font-semibold rounded-md transition-all duration-200"
               style={mode === 'signin'
                 ? { background: 'var(--accent)', color: '#1a1d27' }
                 : { color: 'var(--text-muted)' }
@@ -166,7 +216,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => switchMode('signup')}
-              className="flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200"
+              className="flex-1 py-2.5 text-sm font-semibold rounded-md transition-all duration-200"
               style={mode === 'signup'
                 ? { background: 'var(--accent)', color: '#1a1d27' }
                 : { color: 'var(--text-muted)' }
@@ -205,19 +255,68 @@ export default function Home() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="input-field"
-                  placeholder="Your name"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                />
-              </div>
+              <>
+                {/* Avatar upload */}
+                <div className="flex flex-col items-center mb-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative group"
+                  >
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar preview"
+                        className="w-20 h-20 rounded-full object-cover transition-opacity group-hover:opacity-80"
+                        style={{ border: '3px solid var(--accent)' }}
+                      />
+                    ) : (
+                      <div
+                        className="w-20 h-20 rounded-full flex flex-col items-center justify-center transition-all group-hover:border-accent"
+                        style={{ background: 'var(--bg-surface)', border: '2px dashed var(--border)' }}
+                      >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
+                          <path d="M12 16V8M8 12l4-4 4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M3 16.5V18a3 3 0 003 3h12a3 3 0 003-3v-1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
+                    <div
+                      className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: 'rgba(0,0,0,0.5)' }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="13" r="4" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarSelect}
+                  />
+                  <span className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                    {avatarPreview ? 'Tap to change' : 'Add a profile photo'}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    placeholder="Your name"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                  />
+                </div>
+              </>
             )}
 
             <div>

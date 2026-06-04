@@ -57,8 +57,8 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
 
       {/* Name */}
       <span
-        className={`${fontSize} font-semibold text-center leading-tight max-w-[100px] truncate`}
-        style={{ color: isCurrentUser ? medal.ring : 'var(--text)' }}
+        className={`${fontSize} font-semibold text-center leading-tight`}
+        style={{ color: isCurrentUser ? medal.ring : 'var(--text)', maxWidth: '120px', wordBreak: 'break-word' }}
       >
         {user?.name || 'Empty'}
       </span>
