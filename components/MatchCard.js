@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CountryFlag from './CountryFlag';
 import ScoreInput from './ScoreInput';
 
@@ -8,10 +8,28 @@ export default function MatchCard({ match, prediction, onSave }) {
   const [awayScore, setAwayScore] = useState(prediction?.away_score ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [now, setNow] = useState(typeof window !== 'undefined' ? Date.now() : new Date(match.start_time).getTime() - 86400000); // Safe fallback
 
   const isFinished = match.status === 'finished';
   const isLive = match.status === 'in_progress';
   const hasPrediction = prediction?.id;
+
+  useEffect(() => {
+    setNow(Date.now());
+    if (isFinished || isLive) return;
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, [isFinished, isLive]);
+
+  const matchDate = new Date(match.start_time);
+  const timeUntilMatch = matchDate.getTime() - now;
+  
+  // 1 hour = 3600000 ms
+  const isLocked = !isFinished && !isLive && timeUntilMatch <= 3600000;
+  // 5 days = 432000000 ms
+  const isStaggered = !isFinished && !isLive && timeUntilMatch > 432000000;
+  
+  const canEdit = !isFinished && !isLive && !isLocked && !isStaggered;
 
   const handleSave = async () => {
     if (homeScore === '' || awayScore === '') return;
@@ -25,6 +43,8 @@ export default function MatchCard({ match, prediction, onSave }) {
   const statusBadge = () => {
     if (isLive) return <span className="badge badge-live">Live</span>;
     if (isFinished) return <span className="badge badge-finished">Finished</span>;
+    if (isLocked) return <span className="badge" style={{ background: 'var(--accent-red-dim)', color: 'var(--accent-red)' }}>Locked</span>;
+    if (isStaggered) return <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>Locked</span>;
     return <span className="badge badge-upcoming">Upcoming</span>;
   };
 
@@ -105,24 +125,35 @@ export default function MatchCard({ match, prediction, onSave }) {
                 </span>
               )}
             </div>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 relative">
               <ScoreInput
                 value={homeScore}
                 onChange={setHomeScore}
-                disabled={isFinished}
+                disabled={!canEdit}
               />
               <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>–</span>
               <ScoreInput
                 value={awayScore}
                 onChange={setAwayScore}
-                disabled={isFinished}
+                disabled={!canEdit}
               />
+              {isLocked && !isFinished && !isLive && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] rounded-lg">
+                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Match Starts Soon</span>
+                </div>
+              )}
+              {isStaggered && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] rounded-lg">
+                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Unlocks {(timeUntilMatch / 86400000).toFixed(0)} days before</span>
+                </div>
+              )}
             </div>
             <div className="mt-4 flex justify-end">
               <button
                 onClick={handleSave}
-                disabled={saving || homeScore === '' || awayScore === ''}
+                disabled={!canEdit || saving || homeScore === '' || awayScore === ''}
                 className="btn-primary text-xs px-5 py-2 flex items-center gap-2"
+                style={!canEdit ? { background: 'var(--bg-elevated)', color: 'var(--text-muted)', cursor: 'not-allowed', boxShadow: 'none' } : {}}
               >
                 {saved ? (
                   <>
@@ -133,6 +164,10 @@ export default function MatchCard({ match, prediction, onSave }) {
                   </>
                 ) : saving ? (
                   'Saving...'
+                ) : isStaggered ? (
+                  'Too Early'
+                ) : isLocked ? (
+                  'Locked'
                 ) : hasPrediction ? (
                   'Update'
                 ) : (

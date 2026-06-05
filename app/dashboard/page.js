@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import MatchCard from '@/components/MatchCard';
 import EditProfileModal from '@/components/EditProfileModal';
+import Countdown from '@/components/Countdown';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -166,10 +167,18 @@ export default function Dashboard() {
     );
   }
 
+  const upcomingMatches = matches.filter(m => m.status !== 'finished');
+  const firstUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <Header />
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8">
+        {/* Countdown */}
+        {firstUpcomingMatch && (
+          <Countdown targetDate={firstUpcomingMatch.start_time} />
+        )}
+
         {/* Stats bar */}
         <div
           className="rounded-2xl px-4 sm:px-5 py-4 mb-6"
