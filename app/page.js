@@ -408,14 +408,19 @@ export default function Home() {
                 Password
               </label>
               <input
-                type="password"
+                type={mode === 'signup' ? 'text' : 'password'}
                 required
                 className="input-field"
-                placeholder="••••••••"
+                placeholder={mode === 'signup' ? "Make it a good one" : "••••••••"}
                 minLength={6}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
+              {mode === 'signup' && (
+                <p className="text-xs mt-2 italic opacity-80" style={{ color: 'var(--accent)' }}>
+                  * Please do not forget your password (we really don't want to build a reset feature).
+                </p>
+              )}
             </div>
 
             <button

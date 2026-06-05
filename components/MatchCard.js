@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import CountryFlag from './CountryFlag';
 import ScoreInput from './ScoreInput';
 
-export default function MatchCard({ match, prediction, onSave }) {
+export default function MatchCard({ match, prediction, onSave, tournamentStartDate }) {
   const [homeScore, setHomeScore] = useState(prediction?.home_score ?? '');
   const [awayScore, setAwayScore] = useState(prediction?.away_score ?? '');
   const [saving, setSaving] = useState(false);
@@ -26,8 +26,29 @@ export default function MatchCard({ match, prediction, onSave }) {
   
   // 1 hour = 3600000 ms
   const isLocked = !isFinished && !isLive && timeUntilMatch <= 3600000;
-  // 5 days = 432000000 ms
-  const isStaggered = !isFinished && !isLive && timeUntilMatch > 432000000;
+  
+  // Week-based staggering logic
+  let isStaggered = false;
+  let openDateStr = '';
+  let weekDisplay = 1;
+  
+  if (tournamentStartDate && !isFinished && !isLive) {
+    const tStart = new Date(tournamentStartDate).getTime();
+    const msSinceStart = matchDate.getTime() - tStart;
+    const daysSinceStart = Math.floor(msSinceStart / (1000 * 60 * 60 * 24));
+    const weekIndex = Math.floor(daysSinceStart / 7);
+    weekDisplay = Math.max(1, weekIndex + 1);
+    
+    if (weekIndex > 0) {
+      // Opens 7 days before its week begins
+      const openTime = tStart + (weekIndex - 1) * 7 * 24 * 60 * 60 * 1000;
+      if (now < openTime) {
+        isStaggered = true;
+        const oDate = new Date(openTime);
+        openDateStr = oDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    }
+  }
   
   const canEdit = !isFinished && !isLive && !isLocked && !isStaggered;
 
@@ -44,7 +65,7 @@ export default function MatchCard({ match, prediction, onSave }) {
     if (isLive) return <span className="badge badge-live">Live</span>;
     if (isFinished) return <span className="badge badge-finished">Finished</span>;
     if (isLocked) return <span className="badge" style={{ background: 'var(--accent-red-dim)', color: 'var(--accent-red)' }}>Locked</span>;
-    if (isStaggered) return <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>Locked</span>;
+    if (isStaggered) return <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>Week {weekDisplay}</span>;
     return <span className="badge badge-upcoming">Upcoming</span>;
   };
 
@@ -143,7 +164,7 @@ export default function MatchCard({ match, prediction, onSave }) {
               )}
               {isStaggered && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] rounded-lg">
-                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Unlocks {(timeUntilMatch / 86400000).toFixed(0)} days before</span>
+                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Opens {openDateStr}</span>
                 </div>
               )}
             </div>
@@ -164,7 +185,7 @@ export default function MatchCard({ match, prediction, onSave }) {
                 ) : saving ? (
                   'Saving...'
                 ) : isStaggered ? (
-                  'Too Early'
+                  `Week ${weekDisplay}`
                 ) : isLocked ? (
                   'Locked'
                 ) : hasPrediction ? (
