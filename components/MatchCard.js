@@ -48,7 +48,6 @@ export default function MatchCard({ match, prediction, onSave }) {
     return <span className="badge badge-upcoming">Upcoming</span>;
   };
 
-  const matchDate = new Date(match.start_time);
   const timeStr = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
