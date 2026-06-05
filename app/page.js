@@ -11,13 +11,12 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [confirmEmail, setConfirmEmail] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [userCount, setUserCount] = useState(0);
   const [displayCount, setDisplayCount] = useState(0);
   const [formData, setFormData] = useState({
-    email: '',
+    workdayId: '',
     password: '',
     fullName: '',
   });
@@ -112,9 +111,11 @@ export default function Home() {
     setError(null);
     setSuccess(null);
 
+    const syntheticEmail = `${formData.workdayId}@workday.local`;
+
     if (mode === 'signin') {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: syntheticEmail,
         password: formData.password,
       });
       if (signInError) {
@@ -126,7 +127,7 @@ export default function Home() {
     } else {
       // Sign up
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: syntheticEmail,
         password: formData.password,
         options: {
           data: {
@@ -141,7 +142,7 @@ export default function Home() {
       }
       if (data?.user) {
         if (data.user.identities?.length === 0) {
-          setError('An account with this email already exists.');
+          setError('An account with this Workday ID already exists.');
           setLoading(false);
           return;
         }
@@ -160,8 +161,7 @@ export default function Home() {
             .eq('id', data.user.id);
         }
 
-        setConfirmEmail(formData.email);
-        setLoading(false);
+        router.push('/leaderboard');
       }
     }
   };
@@ -231,16 +231,13 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-right pb-1">
-            <div className="text-[10px] uppercase tracking-widest font-bold mb-1 opacity-50" style={{ color: 'var(--text-muted)' }}>Powered by</div>
-            <img src="/TLS.png" alt="TLS" className="h-10 w-auto opacity-70 inline-block" style={{ filter: 'brightness(0) invert(1)' }} />
-          </div>
+
         </div>
       </div>
 
       {/* Right panel — auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12" style={{ background: 'var(--bg)' }}>
-        <div className="w-full max-w-sm">
+      <div className="flex-1 flex items-center justify-center p-8 py-16 lg:p-16" style={{ background: 'var(--bg)' }}>
+        <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="flex items-center justify-center mb-2">
@@ -252,61 +249,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Email confirmation screen */}
-          {confirmEmail ? (
-            <div className="text-center animate-fade-in-up">
-              {/* Envelope icon */}
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
-                style={{ background: 'var(--accent-dim)' }}
-              >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="3" />
-                  <path d="M2 7l10 7 10-7" />
-                </svg>
-              </div>
 
-              <h2 className="text-2xl font-bold tracking-tight mb-2" style={{ color: 'var(--text)' }}>
-                Check your inbox
-              </h2>
-              <p className="text-sm mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                We sent a confirmation link to
-              </p>
-              <p className="text-sm font-semibold mb-6" style={{ color: 'var(--accent)' }}>
-                {confirmEmail}
-              </p>
-              <p className="text-sm mb-8 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                Click the link in the email to activate your account. It may take a minute to arrive — check your spam folder too.
-              </p>
-
-              <button
-                onClick={() => {
-                  setConfirmEmail(null);
-                  setMode('signin');
-                  setFormData({ email: confirmEmail, password: '', fullName: '' });
-                  setAvatarFile(null);
-                  setAvatarPreview(null);
-                }}
-                className="btn-primary text-sm w-full"
-              >
-                Back to sign in
-              </button>
-
-              <button
-                onClick={() => {
-                  setConfirmEmail(null);
-                  setMode('signup');
-                  setFormData({ email: '', password: '', fullName: '' });
-                  setAvatarFile(null);
-                  setAvatarPreview(null);
-                }}
-                className="btn-ghost text-xs mt-4 w-full"
-              >
-                Use a different email
-              </button>
-            </div>
-          ) : (
-          <>
           {/* Ticking Counter */}
           {userCount > 0 && (
             <div className="mb-10 text-center animate-fade-in-up">
@@ -328,35 +271,35 @@ export default function Home() {
 
           {/* Mode toggle */}
           <div
-            className="flex rounded-lg p-1 mb-8"
+            className="flex rounded-lg p-1.5 mb-10"
             style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
           >
             <button
               onClick={() => switchMode('signin')}
-              className="flex-1 py-2.5 text-sm font-semibold rounded-md transition-all duration-200"
+              className="flex-1 py-3 text-sm font-bold rounded-md transition-all duration-200 shadow-sm"
               style={mode === 'signin'
                 ? { background: 'var(--accent)', color: '#1a1d27' }
-                : { color: 'var(--text-muted)' }
+                : { color: 'var(--text-muted)', boxShadow: 'none' }
               }
             >
               Sign in
             </button>
             <button
               onClick={() => switchMode('signup')}
-              className="flex-1 py-2.5 text-sm font-semibold rounded-md transition-all duration-200"
+              className="flex-1 py-3 text-sm font-bold rounded-md transition-all duration-200 shadow-sm"
               style={mode === 'signup'
                 ? { background: 'var(--accent)', color: '#1a1d27' }
-                : { color: 'var(--text-muted)' }
+                : { color: 'var(--text-muted)', boxShadow: 'none' }
               }
             >
               Sign up
             </button>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight mb-1" style={{ color: 'var(--text)' }}>
+          <h2 className="text-3xl font-black tracking-tight mb-2" style={{ color: 'var(--text)' }}>
             {mode === 'signin' ? 'Welcome back' : 'Create your account'}
           </h2>
-          <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-base mb-10" style={{ color: 'var(--text-muted)' }}>
             {mode === 'signin'
               ? 'Enter your credentials to continue'
               : 'Join the prediction game'}
@@ -380,7 +323,7 @@ export default function Home() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {mode === 'signup' && (
               <>
                 {/* Avatar upload */}
@@ -448,15 +391,15 @@ export default function Home() {
 
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                Email
+                Workday ID
               </label>
               <input
-                type="email"
+                type="text"
                 required
                 className="input-field"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="e.g. 123456"
+                value={formData.workdayId}
+                onChange={(e) => setFormData({...formData, workdayId: e.target.value})}
               />
             </div>
 
@@ -478,7 +421,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full text-sm mt-2"
+              className="btn-primary w-full text-base py-3.5 mt-4 shadow-lg font-bold"
             >
               {loading
                 ? (mode === 'signin' ? 'Signing in...' : 'Creating account...')
@@ -497,8 +440,6 @@ export default function Home() {
               {mode === 'signin' ? 'Sign up' : 'Sign in'}
             </button>
           </p>
-          </>
-          )}
         </div>
       </div>
     </div>

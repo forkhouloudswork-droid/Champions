@@ -286,11 +286,7 @@ export default function Dashboard() {
           ))
         )}
 
-        {/* Powered by */}
-        <div className="mt-12 mb-8 text-center flex flex-col items-center justify-center">
-          <span className="text-[10px] uppercase tracking-widest font-bold mb-2 opacity-50" style={{ color: 'var(--text-muted)' }}>Powered by</span>
-          <img src="/TLS.png" alt="TLS" className="h-10 w-auto opacity-40" style={{ filter: 'brightness(0) invert(1)' }} />
-        </div>
+
       </main>
 
       <EditProfileModal

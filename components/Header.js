@@ -123,20 +123,6 @@ export default function Header() {
                       className="absolute right-0 top-full mt-2 w-48 rounded-xl py-1 z-50"
                       style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
                     >
-                      {/* Mobile nav links */}
-                      <div className="md:hidden border-b py-1" style={{ borderColor: 'var(--border)' }}>
-                        {navLinks.map(link => (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={() => setMenuOpen(false)}
-                            className="block px-4 py-2 text-sm transition-colors"
-                            style={{ color: pathname === link.href ? 'var(--accent)' : 'var(--text-secondary)' }}
-                          >
-                            {link.label}
-                          </Link>
-                        ))}
-                      </div>
                       <button
                         onClick={handleSignOut}
                         className="w-full text-left px-4 py-2 text-sm transition-colors"
@@ -153,5 +139,46 @@ export default function Header() {
         </div>
       </div>
     </header>
+
+    {/* Mobile Bottom Tab Bar */}
+    {user && (
+      <nav 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40" 
+        style={{ 
+          background: 'var(--bg-surface)', 
+          borderTop: '1px solid var(--border)',
+          paddingBottom: 'env(safe-area-inset-bottom)'
+        }}
+      >
+        <div className="flex justify-around items-center h-[60px] px-2">
+          {navLinks.map(link => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex flex-col items-center justify-center w-full h-full gap-1 transition-colors"
+                style={isActive ? { color: 'var(--accent)' } : { color: 'var(--text-muted)' }}
+              >
+                {link.href === '/leaderboard' ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="4" />
+                  </svg>
+                )}
+                <span className="text-[10px] font-semibold">{link.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    )}
+    </>
   );
 }
