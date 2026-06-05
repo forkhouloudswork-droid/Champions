@@ -90,7 +90,7 @@ export async function GET(request) {
       const rawStatus = match.status || 'SCHEDULED';
       
       let status = 'in_progress';
-      if (['SCHEDULED', 'CANCELED', 'POSTPONED'].includes(rawStatus)) {
+      if (['SCHEDULED', 'TIMED', 'CANCELED', 'CANCELLED', 'POSTPONED'].includes(rawStatus)) {
         status = 'upcoming';
       } else if (['FINISHED', 'AWARDED'].includes(rawStatus)) {
         status = 'finished';
