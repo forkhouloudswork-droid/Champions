@@ -64,7 +64,7 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
   const statusBadge = () => {
     if (isLive) return <span className="badge badge-live">Live</span>;
     if (isFinished) return <span className="badge badge-finished">Finished</span>;
-    if (isLocked) return <span className="badge" style={{ background: 'var(--accent-red-dim)', color: 'var(--accent-red)' }}>Locked</span>;
+    if (isLocked) return <span className="badge" style={{ background: 'var(--accent-red-dim)', color: 'var(--accent-red)' }}>Locked ({Math.round(timeUntilMatch / 3600000)}h left)</span>;
     if (isStaggered) return <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>Week {weekDisplay}</span>;
     return <span className="badge badge-upcoming">Upcoming</span>;
   };
@@ -159,7 +159,9 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
               />
               {isLocked && !isFinished && !isLive && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] rounded-lg">
-                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Match Starts Soon</span>
+                  <span className="text-xs font-bold text-white tracking-widest uppercase" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                    {timeUntilMatch < 0 ? 'Match Started' : 'Match Starts Soon'}
+                  </span>
                 </div>
               )}
               {isStaggered && (
