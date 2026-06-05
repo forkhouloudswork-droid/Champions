@@ -51,6 +51,7 @@ export default function Header() {
     : 'U';
 
   return (
+    <>
     <header style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
       className="sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
