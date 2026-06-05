@@ -169,7 +169,7 @@ export default function Dashboard() {
 
   const upcomingMatches = matches.filter(m => m.status !== 'finished');
   const firstUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
-  const tournamentStartDate = matches.length > 0 ? matches[0].start_time : null;
+  const tournamentStartDate = firstUpcomingMatch ? firstUpcomingMatch.start_time : (matches.length > 0 ? matches[0].start_time : null);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
