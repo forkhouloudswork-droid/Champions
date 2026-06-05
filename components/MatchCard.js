@@ -205,7 +205,7 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
               <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 You predicted: <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>{prediction.home_score} – {prediction.away_score}</span>
               </div>
-              {prediction.points_awarded != null && (
+              {prediction.points_awarded != null ? (
                 <div
                   className="text-xs font-bold px-2 py-1 rounded-md"
                   style={{
@@ -214,6 +214,13 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
                   }}
                 >
                   +{prediction.points_awarded} pts
+                </div>
+              ) : (
+                <div
+                  className="text-xs font-bold px-2 py-1 rounded-md"
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                >
+                  Calculating...
                 </div>
               )}
             </div>

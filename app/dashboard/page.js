@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [rank, setRank] = useState(null);
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState({});
-  const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'finished'
+  const [filter, setFilter] = useState('open'); // 'open', 'upcoming', 'finished'
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
@@ -130,11 +130,33 @@ export default function Dashboard() {
     }
   };
 
+  const upcomingMatches = matches.filter(m => m.status !== 'finished');
+  const firstUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+  const tournamentStartDate = firstUpcomingMatch ? firstUpcomingMatch.start_time : (matches.length > 0 ? matches[0].start_time : null);
+
+  const getMatchState = (m) => {
+    if (m.status === 'finished' || m.status === 'in_progress') return 'finished';
+    
+    let isStaggered = false;
+    if (tournamentStartDate) {
+      const matchDate = new Date(m.start_time);
+      const tStartMs = new Date(tournamentStartDate).getTime();
+      const msSinceStart = matchDate.getTime() - tStartMs;
+      const daysSinceStart = Math.floor(msSinceStart / (1000 * 60 * 60 * 24));
+      const weekIndex = Math.floor(daysSinceStart / 7);
+      
+      if (weekIndex > 0) {
+        const openTime = tStartMs + (weekIndex - 1) * 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() < openTime) isStaggered = true;
+      }
+    }
+    
+    return isStaggered ? 'upcoming' : 'open';
+  };
+
   // Group matches by date
   const filteredMatches = matches.filter(m => {
-    if (filter === 'upcoming') return m.status !== 'finished';
-    if (filter === 'finished') return m.status === 'finished';
-    return true;
+    return getMatchState(m) === filter;
   });
 
   const grouped = {};
@@ -167,9 +189,7 @@ export default function Dashboard() {
     );
   }
 
-  const upcomingMatches = matches.filter(m => m.status !== 'finished');
-  const firstUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
-  const tournamentStartDate = firstUpcomingMatch ? firstUpcomingMatch.start_time : (matches.length > 0 ? matches[0].start_time : null);
+  const upcomingMatchesForCount = matches.filter(m => m.status !== 'finished');
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
@@ -254,9 +274,9 @@ export default function Dashboard() {
         {/* Filter tabs */}
         <div className="flex gap-1 mb-6">
           {[
-            { key: 'all', label: 'All Matches' },
-            { key: 'upcoming', label: 'Upcoming' },
-            { key: 'finished', label: 'Finished' },
+            { key: 'open', label: 'Open Matches' },
+            { key: 'upcoming', label: 'Upcoming Matches' },
+            { key: 'finished', label: 'Finished Matches' },
           ].map(tab => (
             <button
               key={tab.key}
