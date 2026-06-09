@@ -69,6 +69,7 @@ export default function Dashboard() {
             away_score: p.away_score,
             modifications: p.modifications || 0,
             points_awarded: p.points_awarded,
+            used_golden_ball: p.used_golden_ball,
           };
         });
         setPredictions(predMap);
@@ -80,9 +81,16 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [router]);
 
-  const handleSave = async (matchId, homeScore, awayScore, existingPred) => {
+  const handleSave = async (matchId, homeScore, awayScore, existingPred, useGoldenBall) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+
+    let isUsingNewGoldenBall = useGoldenBall && (!existingPred || !existingPred.used_golden_ball);
+
+    if (isUsingNewGoldenBall && (!profile || profile.golden_balls_count <= 0)) {
+      isUsingNewGoldenBall = false;
+      useGoldenBall = false;
+    }
 
     if (existingPred?.id) {
       await supabase
@@ -91,6 +99,7 @@ export default function Dashboard() {
           home_score: homeScore,
           away_score: awayScore,
           modifications: (existingPred.modifications || 0) + 1,
+          used_golden_ball: useGoldenBall || existingPred.used_golden_ball,
         })
         .eq('id', existingPred.id);
 
@@ -101,6 +110,7 @@ export default function Dashboard() {
           home_score: homeScore,
           away_score: awayScore,
           modifications: (existingPred.modifications || 0) + 1,
+          used_golden_ball: useGoldenBall || existingPred.used_golden_ball,
         }
       }));
     } else {
@@ -111,6 +121,7 @@ export default function Dashboard() {
           match_id: matchId,
           home_score: homeScore,
           away_score: awayScore,
+          used_golden_ball: useGoldenBall || false,
         })
         .select()
         .single();
@@ -124,9 +135,20 @@ export default function Dashboard() {
             away_score: awayScore,
             modifications: 0,
             points_awarded: null,
+            used_golden_ball: useGoldenBall || false,
           }
         }));
       }
+    }
+
+    if (isUsingNewGoldenBall) {
+      const newCount = profile.golden_balls_count - 1;
+      await supabase
+        .from('profiles')
+        .update({ golden_balls_count: newCount })
+        .eq('id', session.user.id);
+      
+      setProfile(prev => ({ ...prev, golden_balls_count: newCount }));
     }
   };
 
@@ -262,6 +284,12 @@ export default function Dashboard() {
                 <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Points</div>
               </div>
               <div className="text-right">
+                <div className="text-base sm:text-lg font-bold flex items-center gap-1 justify-end" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.4)' }}>
+                  {profile?.golden_balls_count ?? 5} ⚽
+                </div>
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Golden Balls</div>
+              </div>
+              <div className="text-right">
                 <div className="text-base sm:text-lg font-bold" style={{ color: 'var(--text)' }}>
                   {predictedCount}/{totalCount}
                 </div>
@@ -309,6 +337,7 @@ export default function Dashboard() {
                       prediction={predictions[match.id]}
                       onSave={handleSave}
                       tournamentStartDate={tournamentStartDate}
+                      goldenBallsCount={profile?.golden_balls_count ?? 5}
                     />
                   </div>
                 ))}

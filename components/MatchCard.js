@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import CountryFlag from './CountryFlag';
 import ScoreInput from './ScoreInput';
 
-export default function MatchCard({ match, prediction, onSave, tournamentStartDate }) {
+export default function MatchCard({ match, prediction, onSave, tournamentStartDate, goldenBallsCount = 5 }) {
   const [homeScore, setHomeScore] = useState(prediction?.home_score ?? '');
   const [awayScore, setAwayScore] = useState(prediction?.away_score ?? '');
+  const [useGoldenBall, setUseGoldenBall] = useState(prediction?.used_golden_ball ?? false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [now, setNow] = useState(typeof window !== 'undefined' ? Date.now() : new Date(match.start_time).getTime() - 86400000); // Safe fallback
@@ -51,11 +52,20 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
   }
   
   const canEdit = !isFinished && !isLive && !isLocked && !isStaggered;
+  
+  const isGoldenBallLocked = prediction?.used_golden_ball;
+  const canToggleGoldenBall = canEdit && !isGoldenBallLocked && (goldenBallsCount > 0 || useGoldenBall);
+
+  const handleGoldenBallToggle = () => {
+    if (canToggleGoldenBall) {
+      setUseGoldenBall(!useGoldenBall);
+    }
+  };
 
   const handleSave = async () => {
     if (homeScore === '' || awayScore === '') return;
     setSaving(true);
-    await onSave(match.id, parseInt(homeScore), parseInt(awayScore), prediction);
+    await onSave(match.id, parseInt(homeScore), parseInt(awayScore), prediction, useGoldenBall);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -139,11 +149,18 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 Your Prediction
               </span>
-              {prediction?.modifications > 0 && (
-                <span className="text-xs" style={{ color: 'var(--accent-red)' }}>
-                  {prediction.modifications}× modified (−{prediction.modifications * 10}%)
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {prediction?.modifications > 0 && (
+                  <span className="text-xs" style={{ color: 'var(--accent-red)' }}>
+                    {prediction.modifications}× modified (−5%)
+                  </span>
+                )}
+                {prediction?.used_golden_ball && (
+                  <span className="text-xs font-bold" style={{ color: '#FFD700', textShadow: '0 0 8px rgba(255,215,0,0.4)' }}>
+                    ⚽ 2x MULTIPLIER
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-center gap-4 relative">
               <ScoreInput
@@ -170,7 +187,23 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
                 </div>
               )}
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-between items-center">
+              <button
+                onClick={handleGoldenBallToggle}
+                disabled={!canToggleGoldenBall && !isGoldenBallLocked}
+                className={`text-xs px-3 py-2 flex items-center gap-1.5 rounded-lg transition-all duration-200 border ${
+                  useGoldenBall 
+                    ? 'border-[#FFD700] bg-[#FFD700]/10 text-[#FFD700]' 
+                    : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:border-[#FFD700]/50 hover:text-[#FFD700]'
+                }`}
+                style={(!canToggleGoldenBall && !isGoldenBallLocked) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              >
+                <span className={useGoldenBall ? 'animate-pulse' : 'grayscale opacity-50'}>⚽</span>
+                <span className="hidden sm:inline">
+                  {isGoldenBallLocked ? 'Golden Ball Used' : useGoldenBall ? 'Golden Ball Active' : 'Use Golden Ball'}
+                </span>
+              </button>
+
               <button
                 onClick={handleSave}
                 disabled={!canEdit || saving || homeScore === '' || awayScore === ''}
@@ -213,7 +246,7 @@ export default function MatchCard({ match, prediction, onSave, tournamentStartDa
                     color: prediction.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
                   }}
                 >
-                  +{prediction.points_awarded} pts
+                  +{prediction.points_awarded} pts {prediction.used_golden_ball && '⚽'}
                 </div>
               ) : (
                 <div

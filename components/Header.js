@@ -44,6 +44,7 @@ export default function Header() {
   const navLinks = [
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/dashboard', label: 'Predictions' },
+    { href: '/rules', label: 'Rules' },
   ];
 
   const initials = profile?.full_name
@@ -166,6 +167,11 @@ export default function Header() {
                     <line x1="18" y1="20" x2="18" y2="10" />
                     <line x1="12" y1="20" x2="12" y2="4" />
                     <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                ) : link.href === '/rules' ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                   </svg>
                 ) : (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round">

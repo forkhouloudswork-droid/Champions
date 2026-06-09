@@ -27,12 +27,16 @@ function calculatePoints(prediction, actualHomeScore, actualAwayScore) {
     basePoints = 2; // Correct winner only
   }
 
-  // Penalty calculation: 10% reduction per modification
-  const penaltyPercentage = 0.10 * (prediction.modifications || 0);
+  // Penalty calculation: Static 5% reduction if modified at least once
+  const penaltyPercentage = prediction.modifications > 0 ? 0.05 : 0;
   const deduction = basePoints * penaltyPercentage;
   
-  // Ensure we don't go below 0 for a winning bet, though max deduction could be 100% if modified 10 times.
-  const finalPoints = Math.max(0, basePoints - deduction);
+  // Apply deduction and then apply Golden Ball multiplier
+  let finalPoints = Math.max(0, basePoints - deduction);
+  
+  if (prediction.used_golden_ball) {
+    finalPoints *= 2; // +100% score
+  }
   
   return finalPoints;
 }

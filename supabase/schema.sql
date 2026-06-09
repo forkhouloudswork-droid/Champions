@@ -5,6 +5,7 @@ CREATE TABLE public.profiles (
   full_name text,
   avatar_url text,
   points numeric(10,2) default 0,
+  golden_balls_count integer default 5,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -49,6 +50,7 @@ CREATE TABLE public.predictions (
   home_score integer not null,
   away_score integer not null,
   modifications integer default 0, -- Tracks number of times updated to calculate penalty
+  used_golden_ball boolean default false,
   points_awarded numeric(10,2),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
