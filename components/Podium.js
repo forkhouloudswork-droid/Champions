@@ -12,9 +12,9 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
   const isFirst = rank === 1;
 
   // Large rectangular avatars for more visual impact
-  const avatarWidth = isFirst ? 110 : 88;
-  const avatarHeight = isFirst ? 130 : 105;
-  const borderRadius = isFirst ? 16 : 12;
+  const avatarWidth = isFirst ? 140 : 110;
+  const avatarHeight = isFirst ? 170 : 135;
+  const borderRadius = isFirst ? 18 : 14;
   const fontSize = isFirst ? 'text-base' : 'text-sm';
   const pointsSize = isFirst ? 'text-xl' : 'text-lg';
   const initialsSize = isFirst ? '2rem' : '1.5rem';
@@ -105,7 +105,7 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
       <div
         className="mt-3 rounded-t-lg"
         style={{
-          width: isFirst ? 120 : 100,
+          width: isFirst ? 150 : 120,
           height: isFirst ? '80px' : rank === 2 ? '56px' : '40px',
           background: `linear-gradient(180deg, ${medal.ring}22 0%, ${medal.ring}08 100%)`,
           borderTop: `2px solid ${medal.ring}44`,
