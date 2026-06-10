@@ -11,9 +11,9 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
   const medal = MEDAL_COLORS[rank];
   const isFirst = rank === 1;
 
-  // Large rectangular avatars for more visual impact
-  const avatarWidth = isFirst ? 140 : 110;
-  const avatarHeight = isFirst ? 170 : 135;
+  // Fluid responsive sizes: clamp(mobile, preferred, desktop)
+  const avatarWidth = isFirst ? 'clamp(90px, 22vw, 140px)' : 'clamp(70px, 18vw, 110px)';
+  const avatarHeight = isFirst ? 'clamp(110px, 28vw, 170px)' : 'clamp(85px, 22vw, 135px)';
   const borderRadius = isFirst ? 18 : 14;
   const fontSize = isFirst ? 'text-base' : 'text-sm';
   const pointsSize = isFirst ? 'text-xl' : 'text-lg';
@@ -105,7 +105,7 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
       <div
         className="mt-3 rounded-t-lg"
         style={{
-          width: isFirst ? 150 : 120,
+          width: isFirst ? 'clamp(100px, 24vw, 150px)' : 'clamp(80px, 20vw, 120px)',
           height: isFirst ? '80px' : rank === 2 ? '56px' : '40px',
           background: `linear-gradient(180deg, ${medal.ring}22 0%, ${medal.ring}08 100%)`,
           borderTop: `2px solid ${medal.ring}44`,
@@ -131,7 +131,7 @@ export default function Podium({ users, currentUserId }) {
   ];
 
   return (
-    <div className="flex items-end justify-center gap-4 sm:gap-6 pt-6 pb-2">
+    <div className="flex items-end justify-center gap-2 sm:gap-6 pt-6 pb-2" style={{ width: '100%', maxWidth: '100%' }}>
       {display.map(({ user, rank, delay }) => (
         <PodiumSlot
           key={rank}
