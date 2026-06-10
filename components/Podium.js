@@ -10,9 +10,14 @@ const MEDAL_COLORS = {
 function PodiumSlot({ user, rank, isCurrentUser, delay }) {
   const medal = MEDAL_COLORS[rank];
   const isFirst = rank === 1;
-  const avatarSize = isFirst ? 'w-20 h-20' : 'w-16 h-16';
+
+  // Large rectangular avatars for more visual impact
+  const avatarWidth = isFirst ? 110 : 88;
+  const avatarHeight = isFirst ? 130 : 105;
+  const borderRadius = isFirst ? 16 : 12;
   const fontSize = isFirst ? 'text-base' : 'text-sm';
   const pointsSize = isFirst ? 'text-xl' : 'text-lg';
+  const initialsSize = isFirst ? '2rem' : '1.5rem';
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -23,24 +28,36 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
       className="flex flex-col items-center animate-podium-rise"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Avatar */}
+      {/* Avatar — large rounded rectangle */}
       <div className="relative mb-3">
         {user?.avatar_url ? (
           <img
             src={user.avatar_url}
             alt={user.name}
-            className={`${avatarSize} rounded-full object-cover`}
-            style={{ border: `3px solid ${medal.ring}`, boxShadow: `0 0 20px ${medal.ring}33` }}
+            style={{
+              width: avatarWidth,
+              height: avatarHeight,
+              borderRadius,
+              objectFit: 'cover',
+              border: `3px solid ${medal.ring}`,
+              boxShadow: `0 4px 24px ${medal.ring}44, 0 0 0 1px ${medal.ring}22`,
+            }}
           />
         ) : (
           <div
-            className={`${avatarSize} rounded-full flex items-center justify-center font-bold`}
             style={{
+              width: avatarWidth,
+              height: avatarHeight,
+              borderRadius,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
               background: medal.bg,
               border: `3px solid ${medal.ring}`,
               color: medal.ring,
-              fontSize: isFirst ? '1.5rem' : '1.125rem',
-              boxShadow: `0 0 20px ${medal.ring}33`,
+              fontSize: initialsSize,
+              boxShadow: `0 4px 24px ${medal.ring}44, 0 0 0 1px ${medal.ring}22`,
             }}
           >
             {initials}
@@ -48,8 +65,18 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
         )}
         {/* Medal badge */}
         <span
-          className="absolute -bottom-1 -right-1 text-lg"
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+          className="absolute -bottom-2 -right-2 text-xl"
+          style={{
+            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
+            background: 'var(--bg-surface, #1a1a2e)',
+            borderRadius: '50%',
+            width: 32,
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: `2px solid ${medal.ring}44`,
+          }}
         >
           {medal.label}
         </span>
@@ -76,8 +103,9 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
 
       {/* Pedestal */}
       <div
-        className="mt-3 rounded-t-lg w-24"
+        className="mt-3 rounded-t-lg"
         style={{
+          width: isFirst ? 120 : 100,
           height: isFirst ? '80px' : rank === 2 ? '56px' : '40px',
           background: `linear-gradient(180deg, ${medal.ring}22 0%, ${medal.ring}08 100%)`,
           borderTop: `2px solid ${medal.ring}44`,

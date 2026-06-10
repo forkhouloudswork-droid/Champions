@@ -20,8 +20,9 @@ export default function Leaderboard() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, points')
-        .order('points', { ascending: false });
+        .select('id, full_name, avatar_url, points, created_at')
+        .order('points', { ascending: false })
+        .order('created_at', { ascending: true });
 
       if (data) {
         setUsers(data.map((u, i) => ({
