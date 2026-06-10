@@ -39,7 +39,8 @@ export default function Dashboard() {
       const { data: allProfiles } = await supabase
         .from('profiles')
         .select('id')
-        .order('points', { ascending: false });
+        .order('points', { ascending: false })
+        .order('created_at', { ascending: true });
       
       if (allProfiles) {
         const idx = allProfiles.findIndex(p => p.id === session.user.id) + 1;
