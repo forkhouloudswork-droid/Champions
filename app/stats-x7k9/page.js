@@ -15,6 +15,26 @@ export default function SecretStats() {
   const [activeTab, setActiveTab] = useState('matches');
   const [expandedMatch, setExpandedMatch] = useState(null);
 
+  const handleForceFetch = async () => {
+    try {
+      const res = await fetch('/api/sync-matches');
+      if (res.ok) alert('Scores fetched successfully!');
+      else alert('Error fetching scores');
+    } catch (e) {
+      alert('Error fetching scores');
+    }
+  };
+
+  const handleForceCalculate = async () => {
+    try {
+      const res = await fetch('/api/sync-matches');
+      if (res.ok) alert('Scores calculated successfully!');
+      else alert('Error calculating scores');
+    } catch (e) {
+      alert('Error calculating scores');
+    }
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (password === 'arduino') {
@@ -241,13 +261,23 @@ export default function SecretStats() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
 
         {/* Page header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: 'var(--text)' }}>
-            📊 Betting Statistics
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            See what everyone is thinking
-          </p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: 'var(--text)' }}>
+              📊 Betting Statistics
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              See what everyone is thinking
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleForceFetch} className="btn-primary text-xs px-3 py-1.5" style={{ background: 'var(--accent-blue)' }}>
+              Force Fetch API
+            </button>
+            <button onClick={handleForceCalculate} className="btn-primary text-xs px-3 py-1.5" style={{ background: 'var(--accent-green)' }}>
+              Force Calc Scores
+            </button>
+          </div>
         </div>
 
         {/* Global overview cards */}
