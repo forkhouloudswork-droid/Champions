@@ -39,8 +39,68 @@ export default function Leaderboard() {
   }, []);
 
   const top3 = users.slice(0, 3);
-  const rest = users.slice(3);
+  const tryHards = users.slice(3, 10);
+  const benchwarmers = users.slice(10);
   const currentUserRank = users.findIndex(u => u.id === currentUserId) + 1;
+
+  const renderUserRow = (user, i) => {
+    const isMe = user.id === currentUserId;
+    return (
+      <div
+        key={user.id}
+        className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors duration-150 animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}
+        style={{
+          background: isMe ? 'var(--accent-dim)' : 'transparent',
+          borderBottom: '1px solid var(--border-subtle)',
+        }}
+      >
+        {/* Rank */}
+        <span
+          className="w-8 text-center text-sm font-bold"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          {user.rank}
+        </span>
+
+        {/* Avatar */}
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt=""
+            className="w-8 h-8 rounded-full object-cover"
+            style={{ border: '2px solid var(--border)' }}
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '2px solid var(--border)',
+              color: 'var(--text-muted)',
+            }}
+          >
+            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+          </div>
+        )}
+
+        {/* Name */}
+        <span
+          className="flex-1 text-sm font-medium"
+          style={{ color: isMe ? 'var(--accent)' : 'var(--text)' }}
+        >
+          {user.name}
+          {isMe && (
+            <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>(you)</span>
+          )}
+        </span>
+
+        {/* Points */}
+        <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
+          {user.points}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
@@ -71,72 +131,33 @@ export default function Leaderboard() {
         ) : (
           <>
             {/* Podium */}
-            <div className="card mb-6" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-              <Podium users={top3} currentUserId={currentUserId} />
+            <div className="mb-10 mt-6">
+              <h2 className="text-xl font-black mb-6 text-center uppercase tracking-widest" style={{ color: 'var(--accent)' }}>🐐 The GOATs 🐐</h2>
+              <div className="card" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+                <Podium users={top3} currentUserId={currentUserId} />
+              </div>
             </div>
 
-            {/* Rest of the leaderboard */}
-            {rest.length > 0 && (
-              <div className="card-flush">
-                <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-                  {rest.map((user, i) => {
-                    const isMe = user.id === currentUserId;
-                    return (
-                      <div
-                        key={user.id}
-                        className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-3.5 transition-colors duration-150 animate-fade-in-up stagger-${Math.min(i + 1, 8)}`}
-                        style={{
-                          background: isMe ? 'var(--accent-dim)' : 'transparent',
-                          borderBottom: '1px solid var(--border-subtle)',
-                        }}
-                      >
-                        {/* Rank */}
-                        <span
-                          className="w-8 text-center text-sm font-bold"
-                          style={{ color: 'var(--text-muted)' }}
-                        >
-                          {user.rank}
-                        </span>
+            {/* Try-Hards */}
+            {tryHards.length > 0 && (
+              <div className="mb-10 mt-12">
+                <h2 className="text-lg font-bold mb-4 px-2" style={{ color: 'var(--text)' }}>💦 The Try-Hards (4-10)</h2>
+                <div className="card-flush">
+                  <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                    {tryHards.map((user, i) => renderUserRow(user, i))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-                        {/* Avatar */}
-                        {user.avatar_url ? (
-                          <img
-                            src={user.avatar_url}
-                            alt=""
-                            className="w-8 h-8 rounded-full object-cover"
-                            style={{ border: '2px solid var(--border)' }}
-                          />
-                        ) : (
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
-                            style={{
-                              background: 'var(--bg-elevated)',
-                              border: '2px solid var(--border)',
-                              color: 'var(--text-muted)',
-                            }}
-                          >
-                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                          </div>
-                        )}
-
-                        {/* Name */}
-                        <span
-                          className="flex-1 text-sm font-medium"
-                          style={{ color: isMe ? 'var(--accent)' : 'var(--text)' }}
-                        >
-                          {user.name}
-                          {isMe && (
-                            <span className="ml-2 text-xs font-normal" style={{ color: 'var(--text-muted)' }}>(you)</span>
-                          )}
-                        </span>
-
-                        {/* Points */}
-                        <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
-                          {user.points}
-                        </span>
-                      </div>
-                    );
-                  })}
+            {/* Participation Trophies */}
+            {benchwarmers.length > 0 && (
+              <div className="mb-8 mt-12">
+                <h2 className="text-lg font-bold mb-4 px-2" style={{ color: 'var(--text)' }}>🛋️ The Benchwarmers (11+)</h2>
+                <div className="card-flush">
+                  <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                    {benchwarmers.map((user, i) => renderUserRow(user, i))}
+                  </div>
                 </div>
               </div>
             )}
