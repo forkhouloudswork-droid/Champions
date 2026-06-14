@@ -44,11 +44,11 @@ function calculatePoints(prediction, actualHomeScore, actualAwayScore) {
 }
 
 export async function GET(request) {
-  // Security check temporarily bypassed for testing!
-  // const authHeader = request.headers.get('authorization');
-  // if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  // }
+  // Security check: require CRON_SECRET for sync requests
+  const authHeader = request.headers.get('authorization');
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const hasApiKey = !!process.env.API_SPORTS_KEY;
@@ -141,6 +141,8 @@ export async function GET(request) {
           .eq('match_id', matchId)
           .is('points_awarded', null);
 
+        const affectedUserIds = new Set();
+
         if (predictions && predictions.length > 0) {
           for (const pred of predictions) {
             const earned = calculatePoints(pred, homeScore, awayScore);
@@ -151,24 +153,59 @@ export async function GET(request) {
               .update({ points_awarded: earned })
               .eq('id', pred.id);
 
-            // Fetch user to update total points safely
-            const { data: profile } = await supabaseAdmin
-              .from('profiles')
-              .select('points')
-              .eq('id', pred.user_id)
-              .single();
-
-            if (profile) {
-              await supabaseAdmin
-                .from('profiles')
-                .update({ points: Number(profile.points) + earned })
-                .eq('id', pred.user_id);
-            }
+            affectedUserIds.add(pred.user_id);
           }
+        }
+
+        // Recompute total points for each affected user from source of truth
+        // This eliminates drift from double-counting or lost updates
+        for (const userId of affectedUserIds) {
+          const { data: userPreds } = await supabaseAdmin
+            .from('predictions')
+            .select('points_awarded')
+            .eq('user_id', userId)
+            .not('points_awarded', 'is', null);
+
+          const total = (userPreds || []).reduce(
+            (sum, p) => sum + Number(p.points_awarded), 0
+          );
+
+          await supabaseAdmin
+            .from('profiles')
+            .update({ points: total })
+            .eq('id', userId);
         }
       }
     }
 
+    // ── Full recompute: heal any existing drift for ALL users ──
+    const { data: allProfiles } = await supabaseAdmin
+      .from('profiles')
+      .select('id');
+
+    let recomputedCount = 0;
+    if (allProfiles) {
+      for (const prof of allProfiles) {
+        const { data: userPreds } = await supabaseAdmin
+          .from('predictions')
+          .select('points_awarded')
+          .eq('user_id', prof.id)
+          .not('points_awarded', 'is', null);
+
+        const total = (userPreds || []).reduce(
+          (sum, p) => sum + Number(p.points_awarded), 0
+        );
+
+        await supabaseAdmin
+          .from('profiles')
+          .update({ points: total })
+          .eq('id', prof.id);
+
+        recomputedCount++;
+      }
+    }
+
+    console.log(`Recomputed points for ${recomputedCount} users.`);
     console.log('--- SYNC DEBUG END ---');
 
     return NextResponse.json({ 
@@ -186,7 +223,8 @@ export async function GET(request) {
         },
         supabase: {
           matchesUpserted: upsertCount,
-          upsertErrors: upsertErrors
+          upsertErrors: upsertErrors,
+          usersRecomputed: recomputedCount
         }
       }
     });

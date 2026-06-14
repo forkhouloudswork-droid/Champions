@@ -15,23 +15,23 @@ export default function SecretStats() {
   const [activeTab, setActiveTab] = useState('matches');
   const [expandedMatch, setExpandedMatch] = useState(null);
 
-  const handleForceFetch = async () => {
+  const handleForceSync = async () => {
     try {
-      const res = await fetch('/api/sync-matches');
-      if (res.ok) alert('Scores fetched successfully!');
-      else alert('Error fetching scores');
+      const res = await fetch('/api/sync-matches', {
+        headers: {
+          'Authorization': `Bearer ${prompt('Enter CRON_SECRET to authorize sync:') || ''}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Sync complete! ${data.debug?.supabase?.usersRecomputed || 0} users recomputed.`);
+        // Reload data
+        window.location.reload();
+      } else {
+        alert(`Error: ${data.error || 'Unknown error'}`);
+      }
     } catch (e) {
-      alert('Error fetching scores');
-    }
-  };
-
-  const handleForceCalculate = async () => {
-    try {
-      const res = await fetch('/api/sync-matches');
-      if (res.ok) alert('Scores calculated successfully!');
-      else alert('Error calculating scores');
-    } catch (e) {
-      alert('Error calculating scores');
+      alert('Error running sync');
     }
   };
 
@@ -271,11 +271,8 @@ export default function SecretStats() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleForceFetch} className="btn-primary text-xs px-3 py-1.5" style={{ background: 'var(--accent-blue)' }}>
-              Force Fetch API
-            </button>
-            <button onClick={handleForceCalculate} className="btn-primary text-xs px-3 py-1.5" style={{ background: 'var(--accent-green)' }}>
-              Force Calc Scores
+            <button onClick={handleForceSync} className="btn-primary text-xs px-3 py-1.5" style={{ background: 'var(--accent-blue)' }}>
+              Force Sync & Recompute
             </button>
           </div>
         </div>

@@ -1,1 +1,8 @@
 API Docs.md
+<<<<<<< HEAD
+/.next
+/node_modules
+=======
+node_modules
+/.next
+>>>>>>> 240d651e74b66d91d807e68e61c84065c36ce3e3
