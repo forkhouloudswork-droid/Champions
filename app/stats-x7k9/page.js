@@ -17,15 +17,10 @@ export default function SecretStats() {
 
   const handleForceSync = async () => {
     try {
-      const res = await fetch('/api/sync-matches', {
-        headers: {
-          'Authorization': `Bearer ${prompt('Enter CRON_SECRET to authorize sync:') || ''}`
-        }
-      });
+      const res = await fetch('/api/sync-matches');
       const data = await res.json();
       if (res.ok) {
         alert(`Sync complete! ${data.debug?.supabase?.usersRecomputed || 0} users recomputed.`);
-        // Reload data
         window.location.reload();
       } else {
         alert(`Error: ${data.error || 'Unknown error'}`);

@@ -61,6 +61,7 @@ export default function Dashboard() {
       
       if (userPredictions) {
         const predMap = {};
+        let computedPoints = 0;
         userPredictions.forEach(p => {
           predMap[p.match_id] = {
             id: p.id,
@@ -70,8 +71,14 @@ export default function Dashboard() {
             points_awarded: p.points_awarded,
             used_golden_ball: p.used_golden_ball,
           };
+          computedPoints += Number(p.points_awarded) || 0;
         });
         setPredictions(predMap);
+
+        // Override profile points with computed total from source of truth
+        if (userProfile) {
+          setProfile(prev => ({ ...prev, points: computedPoints }));
+        }
       }
 
       setLoading(false);

@@ -18,21 +18,47 @@ export default function Leaderboard() {
         setCurrentUserId(session.user.id);
       }
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, points, created_at')
-        .order('points', { ascending: false })
-        .order('created_at', { ascending: true });
+      // Fetch profiles and predictions to compute points from source of truth
+      const [profilesRes, predictionsRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, points, created_at'),
+        supabase
+          .from('predictions')
+          .select('user_id, points_awarded')
+          .not('points_awarded', 'is', null),
+      ]);
 
-      if (data) {
-        setUsers(data.map((u, i) => ({
-          id: u.id,
-          rank: i + 1,
-          name: u.full_name || 'Anonymous',
-          avatar_url: u.avatar_url || null,
-          points: u.points || 0,
-        })));
-      }
+      const profiles = profilesRes.data || [];
+      const predictions = predictionsRes.data || [];
+
+      // Compute actual points per user from predictions (source of truth)
+      const pointsByUser = {};
+      predictions.forEach(p => {
+        pointsByUser[p.user_id] = (pointsByUser[p.user_id] || 0) + Number(p.points_awarded);
+      });
+
+      // Use computed points, falling back to profiles.points if no predictions exist
+      const usersWithPoints = profiles.map(u => ({
+        id: u.id,
+        name: u.full_name || 'Anonymous',
+        avatar_url: u.avatar_url || null,
+        points: pointsByUser[u.id] !== undefined
+          ? pointsByUser[u.id]
+          : Number(u.points) || 0,
+        created_at: u.created_at,
+      }));
+
+      // Sort by points (desc), then by created_at (asc) for tiebreaking
+      usersWithPoints.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
+
+      setUsers(usersWithPoints.map((u, i) => ({
+        ...u,
+        rank: i + 1,
+      })));
       setLoading(false);
     };
     fetchData();
