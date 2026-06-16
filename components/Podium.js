@@ -95,7 +95,7 @@ function PodiumSlot({ user, rank, isCurrentUser, delay }) {
         className={`${pointsSize} font-bold mt-1`}
         style={{ color: medal.ring }}
       >
-        {user?.points ?? 0}
+        {Number(user?.points ?? 0).toFixed(1)}
       </span>
       <span className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: 'var(--text-muted)' }}>
         pts

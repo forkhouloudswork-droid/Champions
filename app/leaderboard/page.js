@@ -122,7 +122,7 @@ export default function Leaderboard() {
 
         {/* Points */}
         <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
-          {user.points}
+          {Number(user.points).toFixed(1)}
         </span>
       </div>
     );

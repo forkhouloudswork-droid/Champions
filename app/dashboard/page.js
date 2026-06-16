@@ -280,7 +280,7 @@ export default function Dashboard() {
             <div className="flex gap-4 sm:gap-6 flex-shrink-0 ml-auto sm:ml-0">
               <div className="text-right">
                 <div className="text-base sm:text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                  {profile?.points || 0}
+                  {Number(profile?.points || 0).toFixed(1)}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Points</div>
               </div>
