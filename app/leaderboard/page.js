@@ -18,34 +18,18 @@ export default function Leaderboard() {
         setCurrentUserId(session.user.id);
       }
 
-      // Fetch profiles and predictions to compute points from source of truth
-      const [profilesRes, predictionsRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, points, created_at'),
-        supabase
-          .from('predictions')
-          .select('user_id, points_awarded')
-          .not('points_awarded', 'is', null),
-      ]);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, points, created_at');
 
-      const profiles = profilesRes.data || [];
-      const predictions = predictionsRes.data || [];
+      const profiles = profilesData || [];
 
-      // Compute actual points per user from predictions (source of truth)
-      const pointsByUser = {};
-      predictions.forEach(p => {
-        pointsByUser[p.user_id] = (pointsByUser[p.user_id] || 0) + Number(p.points_awarded);
-      });
-
-      // Use computed points, falling back to profiles.points if no predictions exist
+      // Use profile points natively (updated via sync-matches to prevent drift)
       const usersWithPoints = profiles.map(u => ({
         id: u.id,
         name: u.full_name || 'Anonymous',
         avatar_url: u.avatar_url || null,
-        points: pointsByUser[u.id] !== undefined
-          ? pointsByUser[u.id]
-          : Number(u.points) || 0,
+        points: Number(u.points) || 0,
         created_at: u.created_at,
       }));
 

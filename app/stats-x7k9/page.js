@@ -46,7 +46,7 @@ export default function SecretStats() {
     const fetchAll = async () => {
       const [matchRes, predRes, profileRes] = await Promise.all([
         supabase.from('matches').select('*').order('start_time', { ascending: true }),
-        supabase.from('predictions').select('*'),
+        supabase.from('predictions').select('*').limit(10000),
         supabase.from('profiles').select('id, full_name, avatar_url, points, created_at'),
       ]);
 
@@ -109,7 +109,7 @@ export default function SecretStats() {
       const avgGoals = total > 0 ? (totalGoals / total).toFixed(1) : '0';
       const goldenBallsUsed = preds.filter(p => p.used_golden_ball).length;
       const totalMods = preds.reduce((sum, p) => sum + (p.modifications || 0), 0);
-      const pointsEarned = preds.reduce((sum, p) => sum + (p.points_awarded || 0), 0);
+      const pointsEarned = Number((preds.reduce((sum, p) => sum + (p.points_awarded || 0), 0)).toFixed(2));
 
       // Favorite outcome tendency
       const homeWins = preds.filter(p => p.home_score > p.away_score).length;
