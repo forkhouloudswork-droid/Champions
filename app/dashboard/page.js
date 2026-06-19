@@ -73,6 +73,7 @@ export default function Dashboard() {
           };
           computedPoints += Number(p.points_awarded) || 0;
         });
+        computedPoints = Number(computedPoints.toFixed(2));
         setPredictions(predMap);
 
         // Override profile points with computed total from source of truth

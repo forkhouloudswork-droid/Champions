@@ -161,9 +161,9 @@ export async function GET(request) {
             .eq('user_id', userId)
             .not('points_awarded', 'is', null);
 
-          const total = (userPreds || []).reduce(
+          const total = Number(((userPreds || []).reduce(
             (sum, p) => sum + Number(p.points_awarded), 0
-          );
+          )).toFixed(2));
 
           await supabaseAdmin
             .from('profiles')
@@ -187,9 +187,9 @@ export async function GET(request) {
           .eq('user_id', prof.id)
           .not('points_awarded', 'is', null);
 
-        const total = (userPreds || []).reduce(
+        const total = Number(((userPreds || []).reduce(
           (sum, p) => sum + Number(p.points_awarded), 0
-        );
+        )).toFixed(2));
 
         await supabaseAdmin
           .from('profiles')

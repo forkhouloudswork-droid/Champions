@@ -35,7 +35,8 @@ export default function Leaderboard() {
       // Compute actual points per user from predictions (source of truth)
       const pointsByUser = {};
       predictions.forEach(p => {
-        pointsByUser[p.user_id] = (pointsByUser[p.user_id] || 0) + Number(p.points_awarded);
+        const sum = (pointsByUser[p.user_id] || 0) + Number(p.points_awarded);
+        pointsByUser[p.user_id] = Number(sum.toFixed(2));
       });
 
       // Use computed points, falling back to profiles.points if no predictions exist
