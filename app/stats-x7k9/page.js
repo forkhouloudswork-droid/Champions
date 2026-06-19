@@ -46,7 +46,7 @@ export default function SecretStats() {
     const fetchAll = async () => {
       const [matchRes, predRes, profileRes] = await Promise.all([
         supabase.from('matches').select('*').order('start_time', { ascending: true }),
-        supabase.from('predictions').select('*'),
+        supabase.from('predictions').select('*').limit(10000),
         supabase.from('profiles').select('id, full_name, avatar_url, points, created_at'),
       ]);
 
