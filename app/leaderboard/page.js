@@ -190,6 +190,12 @@ export default function Leaderboard() {
           </>
         )}
 
+        {/* Hidden but not hidden joke */}
+        <div className="mt-12 text-center">
+          <p className="text-[10px] opacity-40 hover:opacity-100 transition-opacity duration-300 cursor-default" style={{ color: 'var(--text-muted)' }}>
+            * Yes, there were some bugs with the points calculation earlier. No, we are not sorry. You're welcome for the free math lesson. 🐛💅
+          </p>
+        </div>
 
       </main>
     </div>
